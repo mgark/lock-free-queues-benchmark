@@ -1,0 +1,3 @@
+[submodule "thirdparty/mgark"]
+	path = thirdparty/mgark
+	url = https://github.com/mgark/lock-free-queues.git
