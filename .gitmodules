@@ -1,3 +1,6 @@
 [submodule "thirdparty/mgark"]
 	path = thirdparty/mgark
 	url = https://github.com/mgark/lock-free-queues.git
+[submodule "thirdparty/atomic_queue"]
+	path = thirdparty/atomic_queue
+	url = https://github.com/max0x7ba/atomic_queue.git
