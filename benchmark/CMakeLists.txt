@@ -16,6 +16,7 @@ foreach( sourcefile ${SOURCES} )
 
     # add lock-free queue libraries
     include_directories(PARENT_DIR ../thirdparty/mgark/include)
+    include_directories(PARENT_DIR ../thirdparty/atomic_queue/include)
         
     add_executable(${TARGET_BENCH_NAME})
     target_sources(${TARGET_BENCH_NAME} PRIVATE ${SOURCE_TEST_FILES})

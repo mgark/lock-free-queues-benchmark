@@ -8,6 +8,13 @@ struct ProduceIncremental
 };
 
 template <class T>
+struct ProduceSameValue
+{
+  volatile T initial_val{};
+  T operator()() { return initial_val; }
+};
+
+template <class T>
 struct ConsumeAndStore
 {
   volatile T last_val{};
