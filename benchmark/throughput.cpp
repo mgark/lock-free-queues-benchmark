@@ -15,7 +15,7 @@ int main()
          ITERATION_NUM,
          {benchmark_creator<ThroughputBenchmark2<int, 1, 1, AtomicQueueConfig<int, -1>, ProduceIncremental<int>, ConsumeAndStore<int>>,
                             ThroughputBenchmarkSuite::BenchmarkRunResult>(AtomicQueueConfig<int, -1>{RING_BUFFER_SIZE}),
-          benchmark_creator<ThroughputBenchmark<int, 1, 1, MgarkQueueConfig, ProduceIncremental<int>, ConsumeAndStore<int>>,
+          benchmark_creator<ThroughputBenchmark<int, 1, 1, MgarkQueueConfig, MgarkProduceAll<ProduceIncremental<int>>, MgarkConsumeAll<ConsumeAndStore<int>>>,
                             ThroughputBenchmarkSuite::BenchmarkRunResult>(MgarkQueueConfig{RING_BUFFER_SIZE})})
          .go(N);
 

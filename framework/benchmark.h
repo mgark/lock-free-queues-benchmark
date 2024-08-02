@@ -124,7 +124,7 @@ struct ThroughputBenchmarkRunResult
   }
 };
 
-class ThroughputBenchmarkSuite : BenchmarkSuiteBase<ThroughputBenchmarkRunResult>
+class ThroughputBenchmarkSuite : public BenchmarkSuiteBase<ThroughputBenchmarkRunResult>
 {
 public:
   using Base = BenchmarkSuiteBase<ThroughputBenchmarkRunResult>;
@@ -183,9 +183,46 @@ struct MgarkQueueConfig
   size_t ring_buffer_sz;
 };
 
-template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig, class ProduceOneMessage, class ConsumeOneMessage>
+template <class ProduceOneMessage>
+struct MgarkProduceAll
+{
+  using message_creator = ProduceOneMessage;
+
+  template <class QueueType>
+  void operator()(size_t N, QueueType& q, ProduceOneMessage& message_creator)
+  {
+    ProducerBlocking<QueueType> p(q);
+    q.start();
+    size_t i = 0;
+    while (i < N)
+    {
+      p.emplace(message_creator());
+      ++i;
+    }
+  }
+};
+
+template <class ConsumeOneMessage>
+struct MgarkConsumeAll
+{
+  using message_consumer = ConsumeOneMessage;
+
+  template <class QueueType>
+  void operator()(size_t N, QueueType& q, ConsumeOneMessage& message_processor)
+  {
+    ConsumerBlocking<QueueType> c(q);
+    size_t i = 0;
+    while (i < N)
+    {
+      if (ConsumeReturnCode::Consumed == c.consume([&](const auto& m) { message_processor(m); }))
+        ++i;
+    }
+  }
+};
+
+template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig, class ProduceAllMessage, class ConsumeAllMessage>
 class ThroughputBenchmark
-  : public ThroughputBenchmarkBase<T, _PRODUCER_N_, _CONSUMER_N_, QueueConfig, ProduceOneMessage, ConsumeOneMessage>
+  : public ThroughputBenchmarkBase<T, _PRODUCER_N_, _CONSUMER_N_, QueueConfig, ProduceAllMessage, ConsumeAllMessage>
 {
   std::deque<std::jthread> producers_;
   std::deque<std::jthread> consumers_;
@@ -228,17 +265,9 @@ public:
           {
           }
 
-          ProducerBlocking<QueueType> p(mpmc_queue_);
-          ProduceOneMessage message_creator_;
-          mpmc_queue_.start();
-
-          size_t i = 0;
+          typename ProduceAllMessage::message_creator mc;
           start_time_ns.store(std::chrono::system_clock::now());
-          while (i < N)
-          {
-            p.emplace(message_creator_());
-            ++i;
-          }
+          ProduceAllMessage()(N, mpmc_queue_, mc);
         });
     }
 
@@ -252,14 +281,8 @@ public:
           {
           }
 
-          ConsumerBlocking<QueueType> c(mpmc_queue_);
-          ConsumeOneMessage message_processor_;
-          size_t i = 0;
-          while (i < N)
-          {
-            if (ConsumeReturnCode::Consumed == c.consume([&](const T& m) { message_processor_(m); }))
-              ++i;
-          }
+          typename ConsumeAllMessage::message_consumer mp;
+          ConsumeAllMessage()(N, mpmc_queue_, mp);
         });
     }
 
