@@ -16,6 +16,7 @@
 #include <atomic_queue/atomic_queue.h>
 #include <functional>
 #include <iomanip>
+#include <list>
 #include <mpmc.h>
 #include <random>
 
@@ -31,21 +32,12 @@ public:
   virtual SummaryReport go(size_t N) = 0;
 };
 
-template <class SummaryReport>
-class BenchmarkCreator
+template <class ConcreteBenchmark, class BenchmarkRunResult, class... T>
+static std::function<std::unique_ptr<BenchmarkBase<BenchmarkRunResult>>()> benchmark_creator(
+  T... params) requires(std::is_same_v<BenchmarkRunResult, typename ConcreteBenchmark::summary_type>)
 {
-  std::function<std::unique_ptr<BenchmarkBase<SummaryReport>>()> creator_;
-
-public:
-  template <class ConcreteBenchmark, class... T>
-  BenchmarkCreator(just_type<ConcreteBenchmark>,
-                   T... params) requires(std::is_same_v<SummaryReport, typename ConcreteBenchmark::summary_type>)
-  {
-    creator_ = [=]() { return std::make_unique<ConcreteBenchmark>(params...); };
-  }
-
-  auto operator()() { return creator_(); }
-};
+  return [=]() { return std::make_unique<ConcreteBenchmark>(params...); };
+}
 
 template <class BenchmarkRunResult>
 class BenchmarkSuiteBase
@@ -80,8 +72,9 @@ public:
   };
 
   static const char* csv_header() { return "iterations,N,min_ns,max_ns,50_ns,75_ns,90_ns,99_ns\n"; }
-  BenchmarkSuiteBase(size_t iteration_num, std::initializer_list<BenchmarkCreator<BenchmarkRunResult>> creators)
-    : creators_(creators), iterations_num_(iteration_num)
+  BenchmarkSuiteBase(size_t iteration_num,
+                     std::initializer_list<std::function<std::unique_ptr<BenchmarkBase<BenchmarkRunResult>>()>> creators)
+    : creators_(creators), iteration_num_(iteration_num)
   {
   }
 
@@ -91,23 +84,30 @@ public:
       return {};
 
     std::random_device rd;
-    std::uniform_int_distribution<int> dist(0, creators_.size() - 1);
-    for (size_t i = 0; i < iterations_num_; ++i)
+    for (size_t i = 0; i < iteration_num_; ++i)
     {
-      size_t bench_idx = dist(rd);
-      auto benchmark = creators_.at(bench_idx)();
-      reports_[benchmark->name()].emplace_back(benchmark->go(N));
+      // we want each benchmark to run exactly *iterations_num* but we
+      // want them to run randomly between the benchmark calls
+      auto creators = creators_;
+      while (!creators.empty())
+      {
+        std::uniform_int_distribution<int> dist(0, creators.size() - 1);
+        size_t bench_idx = dist(rd);
+        auto benchmark = creators.at(bench_idx)();
+        reports_[benchmark->name()].emplace_back(benchmark->go(N));
+        creators.erase(begin(creators) + bench_idx);
+      }
     }
 
     return calc_summary(reports_);
   }
 
 protected:
-  std::vector<BenchmarkCreator<BenchmarkRunResult>> creators_;
+  std::vector<std::function<std::unique_ptr<BenchmarkBase<BenchmarkRunResult>>()>> creators_;
   using BenchmarkToSummaryMap =
     std::unordered_map<std::string /*benchmark name*/, std::vector<BenchmarkRunResult>>;
   BenchmarkToSummaryMap reports_;
-  size_t iterations_num_;
+  size_t iteration_num_;
 
   virtual std::vector<Summary> calc_summary(BenchmarkToSummaryMap& reports) = 0;
 };
@@ -132,6 +132,7 @@ public:
   using Base::csv_header;
   using Base::go;
   using Base::Summary;
+  using BenchmarkRunResult = ThroughputBenchmarkRunResult;
 
 protected:
   std::vector<typename Base::Summary> calc_summary(typename Base::BenchmarkToSummaryMap& reports) override
@@ -156,7 +157,7 @@ protected:
       {
         s.benchmark_name = per_benchmark.first;
         s.N = run_stats.front().total_msg_num;
-        s.iterations = this->Base::iterations_num_;
+        s.iterations = this->Base::iteration_num_;
         s.min_ns = run_stats.front().avg_per_msg_ns;
         s.max_ns = run_stats.back().avg_per_msg_ns;
         s.d50_ns = run_stats[run_stats.size() * 0.5].avg_per_msg_ns;
