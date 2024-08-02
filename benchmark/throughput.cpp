@@ -6,14 +6,15 @@ int main()
 {
   constexpr size_t N = 1024 * 1024;
   constexpr size_t RING_BUFFER_SIZE = 1024;
-  constexpr size_t ITERATIONS = 100;
+  constexpr size_t ITERATION_NUM = 100;
 
-  std::cout << ThroughputBenchmarkSummary::csv_header();
-  BenchmarkSuite<ThroughputBenchmarkSummary> suite(
-    ITERATIONS,
-    {BenchmarkCreator<ThroughputBenchmarkSummary>(
-      just_type<ThroughputBenchmark2<int, 1, 1, AtomicQueueConfig<int, -1>, ProduceIncremental<int>, ConsumeAndStore<int>>>{},
-      N, AtomicQueueConfig<int, -1>{RING_BUFFER_SIZE})});
+  std::cout << ThroughputBenchmarkSuite::csv_header();
+  std::cout << ThroughputBenchmarkSuite(
+                 ITERATION_NUM,
+                 {BenchmarkCreator<ThroughputBenchmarkRunResult>(
+                   just_type<ThroughputBenchmark2<int, 1, 1, AtomicQueueConfig<int, -1>, ProduceIncremental<int>, ConsumeAndStore<int>>>{},
+                   AtomicQueueConfig<int, -1>{RING_BUFFER_SIZE})})
+                 .go(N);
 
   // std::cout << (N, {RING_BUFFER_SIZE}).go().summary();
 
