@@ -37,11 +37,11 @@ class BenchmarkCreator
   std::function<std::unique_ptr<BenchmarkBase<SummaryReport>>()> creator_;
 
 public:
-  template <class ContainedType, class... T>
-  BenchmarkCreator(ContainedType,
-                   T... params) requires(std::is_same_v<SummaryReport, typename ContainedType::type::summary_type>)
+  template <class ConcreteBenchmark, class... T>
+  BenchmarkCreator(just_type<ConcreteBenchmark>,
+                   T... params) requires(std::is_same_v<SummaryReport, typename ConcreteBenchmark::summary_type>)
   {
-    creator_ = [=]() { return std::make_unique<typename ContainedType::type>(params...); };
+    creator_ = [=]() { return std::make_unique<ConcreteBenchmark>(params...); };
   }
 
   auto operator()() { return creator_(); }
@@ -129,7 +129,6 @@ class ThroughputBenchmarkSuite : BenchmarkSuiteBase<ThroughputBenchmarkRunResult
 public:
   using Base = BenchmarkSuiteBase<ThroughputBenchmarkRunResult>;
   using Base::BenchmarkSuiteBase;
-  // using Base::BenchmarkToSummaryMap;
   using Base::csv_header;
   using Base::go;
   using Base::Summary;
@@ -146,7 +145,7 @@ protected:
                   if (left.total_msg_num != right.total_msg_num)
                   {
                     throw std::runtime_error(
-                      std::string("benchmark [").append(per_benchmark.first).append("] had failures as not all messages were published/consumed"));
+                      std::string("benchmark [").append(per_benchmark.first).append("] had CRITICAL failures as not all messages were published/consumed - queue appear to have bugs..."));
                   }
 
                   return left.avg_per_msg_ns < right.avg_per_msg_ns;
@@ -160,6 +159,10 @@ protected:
         s.iterations = this->Base::iterations_num_;
         s.min_ns = run_stats.front().avg_per_msg_ns;
         s.max_ns = run_stats.back().avg_per_msg_ns;
+        s.d50_ns = run_stats[run_stats.size() * 0.5].avg_per_msg_ns;
+        s.d75_ns = run_stats[run_stats.size() * 0.75].avg_per_msg_ns;
+        s.d90_ns = run_stats[run_stats.size() * 0.9].avg_per_msg_ns;
+        s.d99_ns = run_stats[run_stats.size() * 0.99].avg_per_msg_ns;
         result.push_back(s);
       }
     }
