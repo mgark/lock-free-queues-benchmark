@@ -3,14 +3,76 @@
 #include <atomic>
 #include <chrono>
 #include <deque>
+#include <initializer_list>
+#include <iterator>
+#include <memory>
 #include <ostream>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "utils.h"
 #include <atomic_queue/atomic_queue.h>
+#include <functional>
 #include <iomanip>
 #include <mpmc.h>
+#include <random>
+
+template <class SummaryReport>
+class BenchmarkBase
+{
+public:
+  using summary_type = SummaryReport;
+
+  BenchmarkBase() {}
+  virtual std::string name() = 0;
+  virtual ~BenchmarkBase() = default;
+  virtual SummaryReport go() = 0;
+};
+
+template <class SummaryReport>
+class BenchmarkCreator
+{
+  std::function<std::unique_ptr<BenchmarkBase<SummaryReport>>()> creator_;
+
+public:
+  template <class ContainedType, class... T>
+  BenchmarkCreator(ContainedType, T... params)
+  {
+    creator_ = [=]() { return std::make_unique<typename ContainedType::type>(params...); };
+  }
+
+  auto operator()() { return creator_(); }
+};
+
+template <class SummaryReport>
+class BenchmarkSuite
+{
+  std::vector<BenchmarkCreator<SummaryReport>> creators_;
+  std::unordered_map<std::string /*benchmark name*/, std::vector<SummaryReport>> reports_;
+  size_t iterations_num_;
+
+public:
+  BenchmarkSuite(size_t iteration_num, std::initializer_list<BenchmarkCreator<SummaryReport>> creators)
+    : creators_(creators), iterations_num_(iteration_num)
+  {
+  }
+
+  void go()
+  {
+    if (creators_.empty())
+      return;
+
+    std::random_device rd;
+    std::uniform_int_distribution<int> dist(0, creators_.size() - 1);
+    for (size_t i = 0; i < iterations_num_; ++i)
+    {
+      size_t bench_idx = dist(rd);
+      auto benchmark = creators_.at(bench_idx)();
+      reports_[benchmark.name()].emplace_back(benchmark.go());
+    }
+  }
+};
 
 struct ThroughputBenchmarkSummary
 {
@@ -25,13 +87,20 @@ struct ThroughputBenchmarkSummary
   }
 };
 
+template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig, class ProduceOneMessage, class ConsumeOneMessage>
+class ThroughputBenchmarkBase : public BenchmarkBase<ThroughputBenchmarkSummary>
+{
+public:
+};
+
 struct MgarkQueueConfig
 {
   size_t N;
 };
 
-template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig>
+template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig, class ProduceOneMessage, class ConsumeOneMessage>
 class ThroughputBenchmark
+  : public ThroughputBenchmarkBase<T, _PRODUCER_N_, _CONSUMER_N_, QueueConfig, ProduceOneMessage, ConsumeOneMessage>
 {
   std::deque<std::jthread> producers_;
   std::deque<std::jthread> consumers_;
@@ -55,8 +124,8 @@ public:
 
   ~ThroughputBenchmark() {}
 
-  template <class ProduceOneMessage, class ConsumeOneMessage>
-  ThroughputBenchmark& go()
+  std::string name() override { return "mgark_queue"; }
+  ThroughputBenchmarkSummary go() override
   {
     std::atomic<std::chrono::system_clock::time_point> start_time_ns;
     std::atomic<std::chrono::system_clock::time_point> end_time_ns;
@@ -131,8 +200,10 @@ struct AtomicQueueConfig
   constexpr static T NIL = NIL_VAL;
 };
 
-template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig>
+template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig, class ProduceOneMessage, class ConsumeOneMessage>
 class ThroughputBenchmark2
+  : public ThroughputBenchmarkBase<T, _PRODUCER_N_, _CONSUMER_N_, QueueConfig, ProduceOneMessage, ConsumeOneMessage>
+
 {
   std::deque<std::jthread> producers_;
   std::deque<std::jthread> consumers_;
@@ -153,12 +224,12 @@ public:
   {
   }
 
+  std::string name() override { return "atomic_queue"; }
   ThroughputBenchmarkSummary summary() const { return summary_; }
 
   ~ThroughputBenchmark2() {}
 
-  template <class ProduceOneMessage, class ConsumeOneMessage>
-  ThroughputBenchmark2& go()
+  ThroughputBenchmarkSummary go() override
   {
     std::atomic<std::chrono::system_clock::time_point> start_time_ns;
     std::atomic<std::chrono::system_clock::time_point> end_time_ns;
@@ -218,6 +289,6 @@ public:
       std::chrono::nanoseconds{end_time_ns.load() - start_time_ns.load()}.count() / (double)N_;
     summary_.total_msg_num = N_;
 
-    return *this;
+    return summary_;
   }
 };
