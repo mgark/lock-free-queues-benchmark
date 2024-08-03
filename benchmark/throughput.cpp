@@ -1,5 +1,9 @@
-#include "../framework/benchmark.h"
-#include "message_functors.h"
+#include "../framework/benchmark_base.h"
+#include "../framework/benchmark_suite.h"
+#include "../framework/benchmark_throughput.h"
+#include "../framework/factory.h"
+#include "atomic_queue_spec.h"
+#include "mgark_spec.h"
 #include <iostream>
 
 int main()
@@ -19,12 +23,12 @@ int main()
     std::cout
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<ThroughputBenchmark<MsgType, AtomicQueueBenchmarkContext<MsgType, -1>, PRODUCER_N, CONSUMER_N,
+           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_SPSCBoundedDynamicBenchmarkContext<MsgType, -1>, PRODUCER_N, CONSUMER_N,
                                                   AtomicQueueProduceAll<ProduceIncremental<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
-                              ThroughputBenchmarkSuite::BenchmarkRunResult>(RING_BUFFER_SIZE),
-            benchmark_creator<ThroughputBenchmark<MsgType, MgarkBenchmarkContext<MsgType, CONSUMER_N, PRODUCER_N>, PRODUCER_N, CONSUMER_N,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>("atomic_queue_spsc_int", RING_BUFFER_SIZE),
+            benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedBenchmarkContext<MsgType, CONSUMER_N, PRODUCER_N>, PRODUCER_N, CONSUMER_N,
                                                   MgarkProduceAll<ProduceIncremental<MsgType>>, MgarkConsumeAll<ConsumeAndStore<MsgType>>>,
-                              ThroughputBenchmarkSuite::BenchmarkRunResult>(RING_BUFFER_SIZE)})
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>("mgark_spsc_int", RING_BUFFER_SIZE)})
            .go(N);
   }
 

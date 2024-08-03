@@ -3,7 +3,7 @@
 ## Requirements  
 
 Need to have three major categories of tests
- - plain throughput tests where we just produce and consume message as fast as possible and than simply 
+ - plain throughput tests where we just produce and consume message as fast as possible
  - ping-pong tests to measure round-trip times for messages
  - tests which simulate real-world behavior closer, by not just constantly pushing messages in the tight loop, but doing that randomly and also performing other tasks to make CPU instruction's and data cache dirty
   
@@ -16,7 +16,7 @@ Another important feature must be ability to run either test with difference par
   - provide the list of cores threads should be pinned to
 
 The above requirements necessitate the creation of the following utilities:
-  - benchmark framework - should be kept as simple as possible
+  - benchmark framework - should be kept as simple as possible, but at the same time it must offers many customization points
   - TSC clock for CPUs which support it
   - pinning threads to cores
   - translating from clock cycles to nanoseconds  
