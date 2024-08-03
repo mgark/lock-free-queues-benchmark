@@ -12,7 +12,7 @@ int main()
   constexpr size_t RING_BUFFER_SIZE = 1024;
   constexpr size_t ITERATION_NUM = 100;
 
-  std::cout << ThroughputBenchmarkSuite::csv_header();
+  std::cout << ThroughputBenchmarkStats::csv_header();
 
   // SPSC  tests
   {
@@ -23,10 +23,10 @@ int main()
     std::cout
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_SPSCBoundedDynamicBenchmarkContext<MsgType, -1>, PRODUCER_N, CONSUMER_N,
+           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_SPSCBoundedDynamicContext<MsgType, -1>, PRODUCER_N, CONSUMER_N,
                                                   AtomicQueueProduceAll<ProduceIncremental<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>("atomic_queue_spsc_int", RING_BUFFER_SIZE),
-            benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedBenchmarkContext<MsgType, CONSUMER_N, PRODUCER_N>, PRODUCER_N, CONSUMER_N,
+            benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedContext<MsgType, CONSUMER_N, PRODUCER_N>, PRODUCER_N, CONSUMER_N,
                                                   MgarkProduceAll<ProduceIncremental<MsgType>>, MgarkConsumeAll<ConsumeAndStore<MsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>("mgark_spsc_int", RING_BUFFER_SIZE)})
            .go(N);

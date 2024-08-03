@@ -1,59 +1,16 @@
 #pragma once
 
 #include "benchmark_base.h"
+#include <iostream>
 
-template <class SingleRunResult>
+template <class SingleRunResult, class BenchmarkStats>
 class BenchmarkSuiteBase
 {
 public:
-  struct BenchmarkStats
-  {
-    std::string benchmark_name;
-    size_t iteration_num;
-    size_t N;
-    std::string msg_type_name;
-    size_t producer_num;
-    size_t consumer_num;
-    double min_ns;
-    double max_ns;
-    double d50_ns;
-    double d75_ns;
-    double d90_ns;
-    double d99_ns;
-
-    friend std::ostream& operator<<(std::ostream& o, BenchmarkStats s)
-    {
-      o << s.benchmark_name << "," << s.iteration_num << "," << s.msg_type_name << ","
-        << s.producer_num << "," << s.consumer_num << "," << s.N << "," << std::fixed
-        << std::setprecision(5) << s.min_ns << "," << s.max_ns << "," << s.d50_ns << "," << s.d75_ns
-        << "," << s.d90_ns << "," << s.d99_ns << "\n";
-      return o;
-    }
-
-    friend std::ostream& operator<<(std::ostream& o, const std::vector<BenchmarkStats>& ss)
-    {
-      for (const auto& s : ss)
-        o << s;
-      return o;
-    }
-  };
-
-  static const char* csv_header()
-  {
-    return "iteration_n,msg_n,msg_type,producer_n,consumer_n,min_ns,max_ns,50_ns,75_ns,90_ns,99_"
-           "ns\n";
-  }
-
   BenchmarkSuiteBase(size_t iteration_num,
                      std::initializer_list<std::function<std::unique_ptr<BenchmarkBase<SingleRunResult>>()>> creators)
     : benchmark_creators_(creators), iteration_num_(iteration_num)
   {
-    if (iteration_num < 100)
-    {
-      throw std::runtime_error(
-        "please configure iteration_num >= 100, otherwise percentile stats would be highly "
-        "inaccurate");
-    }
   }
 
   std::vector<BenchmarkStats> go(size_t N)

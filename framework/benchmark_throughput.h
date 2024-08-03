@@ -2,33 +2,79 @@
 
 #include "benchmark_base.h"
 #include "benchmark_suite.h"
+#include "utils.h"
+#include <atomic>
+#include <iostream>
 
 struct ThroughputSingleRunResult
 {
-  double avg_per_msg_ns;
+  double msg_per_second;
   size_t total_msg_num;
 
   friend std::ostream& operator<<(std::ostream& o, ThroughputSingleRunResult s)
   {
-    o << std::fixed << std::setprecision(5) << s.total_msg_num << "," << s.avg_per_msg_ns << "\n";
+    o << std::fixed << std::setprecision(5) << s.total_msg_num << "," << s.msg_per_second << "\n";
     return o;
   }
 };
 
-class ThroughputBenchmarkSuite : public BenchmarkSuiteBase<ThroughputSingleRunResult>
+struct ThroughputBenchmarkStats
+{
+  std::string benchmark_name;
+  size_t iteration_num;
+  size_t N;
+  std::string msg_type_name;
+  size_t producer_num;
+  size_t consumer_num;
+  size_t min;
+  size_t max;
+  size_t d50;
+  size_t d75;
+  size_t d90;
+  size_t d99;
+
+  static const char* csv_header()
+  {
+    return "iteration_n,msg_n,msg_type,producer_n,consumer_n,min_msg_sec,max_msg_sec,50_msg_sec,75_"
+           "msg_sec"
+           ",90_msg_sec,99_msg_sec\n";
+  }
+
+  friend std::ostream& operator<<(std::ostream& o, ThroughputBenchmarkStats s)
+  {
+    o << s.benchmark_name << "," << s.iteration_num << "," << s.msg_type_name << "," << s.producer_num
+      << "," << s.consumer_num << "," << s.N << "," << std::fixed << std::setprecision(5) << s.min
+      << "," << s.max << "," << s.d50 << "," << s.d75 << "," << s.d90 << "," << s.d99 << "\n";
+    return o;
+  }
+
+  friend std::ostream& operator<<(std::ostream& o, const std::vector<ThroughputBenchmarkStats>& ss)
+  {
+    for (const auto& s : ss)
+      o << s;
+    return o;
+  }
+};
+
+class ThroughputBenchmarkSuite : public BenchmarkSuiteBase<ThroughputSingleRunResult, ThroughputBenchmarkStats>
 {
 public:
-  using Base = BenchmarkSuiteBase<ThroughputSingleRunResult>;
-  using Base::BenchmarkStats;
+  using Base = BenchmarkSuiteBase<ThroughputSingleRunResult, ThroughputBenchmarkStats>;
   using Base::BenchmarkSuiteBase;
-  using Base::csv_header;
   using Base::go;
   using BenchmarkRunResult = ThroughputSingleRunResult;
 
 protected:
-  std::vector<BenchmarkStats> calc_summary(typename Base::BenchmarkResultsMap& benchmark_results) override
+  std::vector<ThroughputBenchmarkStats> calc_summary(typename Base::BenchmarkResultsMap& benchmark_results) override
   {
-    std::vector<BenchmarkStats> result;
+    if (this->iteration_num_ < 100)
+    {
+      throw std::runtime_error(
+        "please configure iteration_num >= 100, otherwise percentile stats would be highly "
+        "inaccurate");
+    }
+
+    std::vector<ThroughputBenchmarkStats> result;
     for (auto& per_benchmark : benchmark_results)
     {
       std::sort(begin(per_benchmark.second.runs), end(per_benchmark.second.runs),
@@ -40,25 +86,29 @@ protected:
                       std::string("benchmark [").append(per_benchmark.first).append("] had CRITICAL failures as not all messages were published/consumed - queue appear to have bugs..."));
                   }
 
-                  return left.avg_per_msg_ns < right.avg_per_msg_ns;
+                  return left.msg_per_second > right.msg_per_second;
                 });
 
-      BenchmarkStats s;
+      ThroughputBenchmarkStats s;
       const std::vector<ThroughputSingleRunResult>& run_stats = per_benchmark.second.runs;
       {
         s.benchmark_name = per_benchmark.first;
         s.N = run_stats.front().total_msg_num;
         s.iteration_num = per_benchmark.second.runs.size();
+
         s.msg_type_name = per_benchmark.second.msg_type_name;
         s.producer_num = per_benchmark.second.producer_num;
         s.consumer_num = per_benchmark.second.consumer_num;
-        s.min_ns = run_stats.front().avg_per_msg_ns;
-        s.max_ns = run_stats.back().avg_per_msg_ns;
+
+        s.min = run_stats.back().msg_per_second;
+        s.max = run_stats.front().msg_per_second;
+
         // a bit crude percentile count, but it would work if iteration num is high enough >= 100
-        s.d50_ns = run_stats[run_stats.size() * 0.5].avg_per_msg_ns;
-        s.d75_ns = run_stats[run_stats.size() * 0.75].avg_per_msg_ns;
-        s.d90_ns = run_stats[run_stats.size() * 0.9].avg_per_msg_ns;
-        s.d99_ns = run_stats[run_stats.size() * 0.99].avg_per_msg_ns;
+        s.d50 = run_stats[run_stats.size() * 0.5].msg_per_second;
+        s.d75 = run_stats[run_stats.size() * 0.75].msg_per_second;
+        s.d90 = run_stats[run_stats.size() * 0.9].msg_per_second;
+        s.d99 = run_stats[run_stats.size() * 0.99].msg_per_second;
+
         result.push_back(s);
       }
     }
@@ -102,6 +152,7 @@ public:
 
     std::atomic_uint64_t producers_ready_num{0};
     std::atomic_uint64_t consumers_ready_num{0};
+    std::atomic_uint64_t total_msg_published{0};
 
     for (size_t producer_id = 0; producer_id < _PRODUCER_N_; ++producer_id)
     {
@@ -115,7 +166,8 @@ public:
 
           typename ProduceAllMessage::message_creator mc;
           start_time_ns.store(std::chrono::system_clock::now());
-          ProduceAllMessage()(N, ctx_, mc);
+          size_t published_num = ProduceAllMessage()(N, ctx_, mc);
+          total_msg_published.fetch_add(published_num);
         });
     }
 
@@ -142,9 +194,10 @@ public:
 
     ThroughputSingleRunResult summary;
     end_time_ns = std::chrono::system_clock::now();
-    summary.avg_per_msg_ns =
-      std::chrono::nanoseconds{end_time_ns.load() - start_time_ns.load()}.count() / (double)N;
-    summary.total_msg_num = N;
+    summary.msg_per_second = static_cast<double>(total_msg_published) /
+      (std::chrono::nanoseconds{end_time_ns.load() - start_time_ns.load()}.count() /
+       static_cast<double>(NANO_PER_SEC));
+    summary.total_msg_num = total_msg_published;
     return summary;
   }
 };
