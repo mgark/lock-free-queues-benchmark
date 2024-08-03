@@ -46,7 +46,9 @@ struct MgarkConsumeAll
     size_t i = 0;
     while (i < N)
     {
-      c.consume([&](const auto& m) { message_processor(m); });
+      auto ret_code = c.consume([&](const auto& m) { message_processor(m); });
+      if (ret_code == ConsumeReturnCode::Consumed)
+        ++i;
     }
 
     return i;
