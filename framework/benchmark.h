@@ -172,79 +172,26 @@ protected:
   }
 };
 
-template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig, class ProduceOneMessage, class ConsumeOneMessage>
-class ThroughputBenchmarkBase : public BenchmarkBase<ThroughputBenchmarkRunResult>
-{
-public:
-};
-
-struct MgarkQueueConfig
-{
-  size_t ring_buffer_sz;
-};
-
-template <class ProduceOneMessage>
-struct MgarkProduceAll
-{
-  using message_creator = ProduceOneMessage;
-
-  template <class QueueType>
-  void operator()(size_t N, QueueType& q, ProduceOneMessage& message_creator)
-  {
-    ProducerBlocking<QueueType> p(q);
-    q.start();
-    size_t i = 0;
-    while (i < N)
-    {
-      p.emplace(message_creator());
-      ++i;
-    }
-  }
-};
-
-template <class ConsumeOneMessage>
-struct MgarkConsumeAll
-{
-  using message_consumer = ConsumeOneMessage;
-
-  template <class QueueType>
-  void operator()(size_t N, QueueType& q, ConsumeOneMessage& message_processor)
-  {
-    ConsumerBlocking<QueueType> c(q);
-    size_t i = 0;
-    while (i < N)
-    {
-      if (ConsumeReturnCode::Consumed == c.consume([&](const auto& m) { message_processor(m); }))
-        ++i;
-    }
-  }
-};
-
-template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig, class ProduceAllMessage, class ConsumeAllMessage>
-class ThroughputBenchmark
-  : public ThroughputBenchmarkBase<T, _PRODUCER_N_, _CONSUMER_N_, QueueConfig, ProduceAllMessage, ConsumeAllMessage>
+template <class T, class BenchmarkContext, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class ProduceAllMessage, class ConsumeAllMessage>
+class ThroughputBenchmark : public BenchmarkBase<ThroughputBenchmarkRunResult>
 {
   std::deque<std::jthread> producers_;
   std::deque<std::jthread> consumers_;
-  size_t N_;
 
-  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_>;
-  ThroughputBenchmarkRunResult summary_;
-  QueueConfig queue_config_;
-  QueueType mpmc_queue_;
+  std::vector<std::size_t> producer_cores_;
+  std::vector<std::size_t> consumer_cores_;
+
+  BenchmarkContext ctx_;
 
   static_assert(std::atomic<std::chrono::system_clock::time_point>::is_always_lock_free);
 
 public:
+  template <class QueueConfig>
   ThroughputBenchmark(QueueConfig config, const std::vector<std::size_t>& producer_cores = {},
                       const std::vector<std::size_t>& consumer_cores = {})
-    : queue_config_(config), mpmc_queue_(queue_config_.ring_buffer_sz)
+    : producer_cores_(producer_cores), consumer_cores_(consumer_cores), ctx_(config)
   {
   }
-
-  ThroughputBenchmarkRunResult summary() const { return summary_; }
-
-  ~ThroughputBenchmark() {}
 
   std::string name() override { return "mgark_queue"; }
   ThroughputBenchmarkRunResult go(size_t N) override
@@ -267,7 +214,7 @@ public:
 
           typename ProduceAllMessage::message_creator mc;
           start_time_ns.store(std::chrono::system_clock::now());
-          ProduceAllMessage()(N, mpmc_queue_, mc);
+          ProduceAllMessage()(N, ctx_, mc);
         });
     }
 
@@ -282,7 +229,7 @@ public:
           }
 
           typename ConsumeAllMessage::message_consumer mp;
-          ConsumeAllMessage()(N, mpmc_queue_, mp);
+          ConsumeAllMessage()(N, ctx_, mp);
         });
     }
 
@@ -292,109 +239,102 @@ public:
     for (auto& t : consumers_)
       t.join();
 
+    ThroughputBenchmarkRunResult summary;
     end_time_ns = std::chrono::system_clock::now();
-    summary_.avg_per_msg_ns =
+    summary.avg_per_msg_ns =
       std::chrono::nanoseconds{end_time_ns.load() - start_time_ns.load()}.count() / (double)N;
-    summary_.total_msg_num = N;
-    return summary_;
+    summary.total_msg_num = N;
+    return summary;
   }
 };
 
-template <class T, T NIL_VAL = -1>
-struct AtomicQueueConfig
+template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_>
+struct MgarkBenchmarkContext
 {
-  size_t capacity;
-  constexpr static T NIL = NIL_VAL;
+  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_>;
+  QueueType q;
+
+  MgarkBenchmarkContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
 };
 
-template <class T, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class QueueConfig, class ProduceOneMessage, class ConsumeOneMessage>
-class ThroughputBenchmark2
-  : public ThroughputBenchmarkBase<T, _PRODUCER_N_, _CONSUMER_N_, QueueConfig, ProduceOneMessage, ConsumeOneMessage>
-
+template <class ProduceOneMessage>
+struct MgarkProduceAll
 {
-  std::deque<std::jthread> producers_;
-  std::deque<std::jthread> consumers_;
+  using message_creator = ProduceOneMessage;
 
-  using Queue = atomic_queue::AtomicQueueB<T, std::allocator<T>, QueueConfig::NIL, true, false, true>;
-
-  Queue queue_;
-  ThroughputBenchmarkRunResult summary_;
-  QueueConfig queue_config_;
-
-  static_assert(std::atomic<std::chrono::system_clock::time_point>::is_always_lock_free);
-
-public:
-  ThroughputBenchmark2(QueueConfig config, const std::vector<std::size_t>& producer_cores = {},
-                       const std::vector<std::size_t>& consumer_cores = {})
-    : queue_config_(config), queue_(queue_config_.capacity)
+  template <class BenchmarkContext>
+  void operator()(size_t N, BenchmarkContext& ctx, ProduceOneMessage& message_creator)
   {
+    ProducerBlocking<typename BenchmarkContext::QueueType> p(ctx.q);
+    ctx.q.start();
+    size_t i = 0;
+    while (i < N)
+    {
+      p.emplace(message_creator());
+      ++i;
+    }
   }
+};
 
-  std::string name() override { return "atomic_queue"; }
-  ThroughputBenchmarkRunResult summary() const { return summary_; }
+template <class ConsumeOneMessage>
+struct MgarkConsumeAll
+{
+  using message_consumer = ConsumeOneMessage;
 
-  ~ThroughputBenchmark2() {}
-
-  ThroughputBenchmarkRunResult go(size_t N) override
+  template <class BenchmarkContext>
+  void operator()(size_t N, BenchmarkContext& ctx, ConsumeOneMessage& message_processor)
   {
-    std::atomic<std::chrono::system_clock::time_point> start_time_ns;
-    std::atomic<std::chrono::system_clock::time_point> end_time_ns;
-
-    std::atomic_uint64_t producers_ready_num{0};
-    std::atomic_uint64_t consumers_ready_num{0};
-
-    for (size_t producer_id = 0; producer_id < _PRODUCER_N_; ++producer_id)
+    ConsumerBlocking<typename BenchmarkContext::QueueType> c(ctx.q);
+    size_t i = 0;
+    while (i < N)
     {
-      producers_.emplace_back(
-        [&]()
-        {
-          ++producers_ready_num;
-          while (producers_ready_num.load() < _PRODUCER_N_ || consumers_ready_num.load() < _CONSUMER_N_)
-          {
-          }
-
-          size_t i = 0;
-          ProduceOneMessage message_creator_;
-          start_time_ns.store(std::chrono::system_clock::now());
-          while (i < N)
-          {
-            queue_.push(message_creator_());
-            ++i;
-          }
-        });
+      if (ConsumeReturnCode::Consumed == c.consume([&](const auto& m) { message_processor(m); }))
+        ++i;
     }
+  }
+};
 
-    for (size_t consumer_id = 0; consumer_id < _CONSUMER_N_; ++consumer_id)
+template <class T, T NIL_VAL>
+struct AtomicQueueBenchmarkContext
+{
+  using QueueType = atomic_queue::AtomicQueueB<T, std::allocator<T>, NIL_VAL, true, false, true>;
+  QueueType q;
+
+  AtomicQueueBenchmarkContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
+};
+
+template <class ProduceOneMessage>
+struct AtomicQueueProduceAll
+{
+  using message_creator = ProduceOneMessage;
+
+  template <class BenchmarkContext>
+  void operator()(size_t N, BenchmarkContext& ctx, ProduceOneMessage& message_creator)
+  {
+    size_t i = 0;
+    ProduceOneMessage message_creator_;
+    while (i < N)
     {
-      consumers_.emplace_back(
-        [&]()
-        {
-          ++consumers_ready_num;
-          while (producers_ready_num.load() < _PRODUCER_N_ || consumers_ready_num.load() < _CONSUMER_N_)
-          {
-          }
-
-          ConsumeOneMessage message_processor_;
-          size_t i = 0;
-          while (i < N)
-          {
-            message_processor_(queue_.pop());
-            ++i;
-          }
-        });
+      ctx.q.push(message_creator_());
+      ++i;
     }
+  }
+};
 
-    for (auto& t : producers_)
-      t.join();
+template <class ConsumeOneMessage>
+struct AtomicQueueConsumeAll
+{
+  using message_consumer = ConsumeOneMessage;
 
-    for (auto& t : consumers_)
-      t.join();
-
-    end_time_ns = std::chrono::system_clock::now();
-    summary_.avg_per_msg_ns =
-      std::chrono::nanoseconds{end_time_ns.load() - start_time_ns.load()}.count() / (double)N;
-    summary_.total_msg_num = N;
-
-    return summary_;
+  template <class BenchmarkContext>
+  void operator()(size_t N, BenchmarkContext& ctx, ConsumeOneMessage& message_processor)
+  {
+    ConsumeOneMessage message_processor_;
+    size_t i = 0;
+    while (i < N)
+    {
+      message_processor_(ctx.q.pop());
+      ++i;
+    }
   }
 };
