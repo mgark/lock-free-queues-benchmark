@@ -4,12 +4,12 @@
 #include <atomic>
 #include <mpmc.h>
 
-template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_>
+template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_, size_t _BATCH_NUM_ = 4>
 struct Mgark_MulticastReliableBoundedContext
 {
   static constexpr const char* VENDOR = "mgark";
 
-  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_>;
+  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_, _BATCH_NUM_>;
   QueueType q;
 
   Mgark_MulticastReliableBoundedContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
