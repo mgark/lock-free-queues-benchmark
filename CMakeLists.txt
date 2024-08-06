@@ -12,4 +12,5 @@ include(CTest)
 include(Catch)
 
 add_subdirectory(test)
+add_subdirectory(thirdparty/mgark/test)
 add_subdirectory(benchmark)
