@@ -29,12 +29,15 @@ public:
         std::uniform_int_distribution<int> dist(0, benchmark_creators.size() - 1);
         size_t bench_idx = dist(rd);
         auto benchmark = benchmark_creators.at(bench_idx)();
-        auto& benchmark_result = benchmark_results_[benchmark->name()];
+        auto& benchmark_result = benchmark_results_[benchmark->key()];
         benchmark_result.runs.emplace_back(benchmark->go(N));
 
         if (benchmark_result.msg_type_name.empty())
         {
           // let's populate benchmark metadata, but make sure it is called before we drop the benchmark
+          benchmark_result.vendor = benchmark->vendor();
+          benchmark_result.name = benchmark->name();
+          benchmark_result.ring_buffer_sz = benchmark->ring_buffer_sz();
           benchmark_result.msg_type_name = benchmark->msg_type_name();
           benchmark_result.producer_num = benchmark->producer_num();
           benchmark_result.consumer_num = benchmark->consumer_num();
@@ -52,9 +55,12 @@ protected:
 
   struct BenchmarkResults
   {
+    std::string name;
+    std::string vendor;
     std::string msg_type_name;
     size_t producer_num;
     size_t consumer_num;
+    size_t ring_buffer_sz;
     std::vector<SingleRunResult> runs;
   };
 

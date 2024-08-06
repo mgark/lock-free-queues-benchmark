@@ -21,6 +21,8 @@ struct ThroughputSingleRunResult
 struct ThroughputBenchmarkStats
 {
   std::string benchmark_name;
+  std::string vendor;
+  size_t ring_buffer_sz;
   size_t iteration_num;
   size_t N;
   std::string msg_type_name;
@@ -35,16 +37,19 @@ struct ThroughputBenchmarkStats
 
   static const char* csv_header()
   {
-    return "iteration_n,msg_n,msg_type,producer_n,consumer_n,min_msg_sec,max_msg_sec,50_msg_sec,75_"
+    return "name,vendor,ring_buffer_sz,iteration_n,msg_n,msg_type,producer_n,consumer_n,min_msg_"
+           "sec,max_msg_sec,50_msg_"
+           "sec,75_"
            "msg_sec"
            ",90_msg_sec,99_msg_sec\n";
   }
 
   friend std::ostream& operator<<(std::ostream& o, ThroughputBenchmarkStats s)
   {
-    o << s.benchmark_name << "," << s.iteration_num << "," << s.msg_type_name << "," << s.producer_num
-      << "," << s.consumer_num << "," << s.N << "," << std::fixed << std::setprecision(5) << s.min
-      << "," << s.max << "," << s.d50 << "," << s.d75 << "," << s.d90 << "," << s.d99 << "\n";
+    o << s.benchmark_name << "," << s.vendor << "," << s.ring_buffer_sz << "," << s.iteration_num
+      << "," << s.N << "," << s.msg_type_name << "," << s.producer_num << "," << s.consumer_num
+      << "," << std::fixed << std::setprecision(5) << s.min << "," << s.max << "," << s.d50 << ","
+      << s.d75 << "," << s.d90 << "," << s.d99 << "\n";
     return o;
   }
 
@@ -92,9 +97,12 @@ protected:
       ThroughputBenchmarkStats s;
       const std::vector<ThroughputSingleRunResult>& run_stats = per_benchmark.second.runs;
       {
-        s.benchmark_name = per_benchmark.first;
+        s.benchmark_name = per_benchmark.second.name;
         s.N = run_stats.front().total_msg_num;
         s.iteration_num = per_benchmark.second.runs.size();
+
+        s.vendor = per_benchmark.second.vendor;
+        s.ring_buffer_sz = per_benchmark.second.ring_buffer_sz;
 
         s.msg_type_name = per_benchmark.second.msg_type_name;
         s.producer_num = per_benchmark.second.producer_num;
@@ -117,7 +125,8 @@ protected:
   }
 };
 
-template <class T, class BenchmarkContext, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_, class ProduceAllMessage, class ConsumeAllMessage>
+template <class T, class BenchmarkContext, std::size_t _PRODUCER_N_, std::size_t _CONSUMER_N_,
+          class ProduceAllMessage, class ConsumeAllMessage, bool multicast_consumers = false>
 class ThroughputBenchmark : public BenchmarkBase<ThroughputSingleRunResult>
 {
   using Base = BenchmarkBase<ThroughputSingleRunResult>;
@@ -133,11 +142,13 @@ class ThroughputBenchmark : public BenchmarkBase<ThroughputSingleRunResult>
   static_assert(std::atomic<std::chrono::system_clock::time_point>::is_always_lock_free);
 
 public:
-  template <class QueueConfig>
-  ThroughputBenchmark(const std::string& name, QueueConfig config,
+  ThroughputBenchmark(const std::string& name, size_t ring_buffer_sz,
                       const std::vector<std::size_t>& producer_cores = {},
                       const std::vector<std::size_t>& consumer_cores = {})
-    : Base(name), producer_cores_(producer_cores), consumer_cores_(consumer_cores), ctx_(config)
+    : Base(name, BenchmarkContext::VENDOR, ring_buffer_sz),
+      producer_cores_(producer_cores),
+      consumer_cores_(consumer_cores),
+      ctx_(ring_buffer_sz)
   {
   }
 
@@ -153,7 +164,22 @@ public:
     std::atomic_uint64_t producers_ready_num{0};
     std::atomic_uint64_t consumers_ready_num{0};
     std::atomic_uint64_t total_msg_published{0};
+    std::atomic_uint64_t total_msg_consumed{0};
 
+    size_t per_producer_num{N / _PRODUCER_N_};
+    size_t per_consumer_num;
+    size_t total_consume_num;
+    if constexpr (multicast_consumers)
+    {
+      per_consumer_num = per_producer_num * _PRODUCER_N_;
+    }
+    else
+    {
+      double tmp = (per_producer_num * _PRODUCER_N_) / (double)_CONSUMER_N_;
+      per_consumer_num = tmp; // it would be approximate number, but as it gets rounded down, consumers would just under-consume 1 message in the worse case, but terminate gracefully!
+    }
+
+    total_consume_num = per_consumer_num * _CONSUMER_N_;
     for (size_t producer_id = 0; producer_id < _PRODUCER_N_; ++producer_id)
     {
       producers_threads_.emplace_back(
@@ -162,11 +188,12 @@ public:
           ++producers_ready_num;
           while (producers_ready_num.load() < _PRODUCER_N_ || consumers_ready_num.load() < _CONSUMER_N_)
           {
+            // all producers and consumers must indicate that they are ready!
           }
 
           typename ProduceAllMessage::message_creator mc;
           start_time_ns.store(std::chrono::system_clock::now());
-          size_t published_num = ProduceAllMessage()(N, ctx_, mc);
+          size_t published_num = ProduceAllMessage()(per_producer_num, ctx_, mc);
           total_msg_published.fetch_add(published_num);
         });
     }
@@ -176,13 +203,8 @@ public:
       consumers_threads_.emplace_back(
         [&]()
         {
-          ++consumers_ready_num;
-          while (producers_ready_num.load() < _PRODUCER_N_ || consumers_ready_num.load() < _CONSUMER_N_)
-          {
-          }
-
-          typename ConsumeAllMessage::message_consumer mp;
-          ConsumeAllMessage()(N, ctx_, mp);
+          typename ConsumeAllMessage::message_processor mp;
+          total_msg_consumed.fetch_add(ConsumeAllMessage()(per_consumer_num, consumers_ready_num, ctx_, mp));
         });
     }
 
@@ -191,6 +213,14 @@ public:
 
     for (auto& t : consumers_threads_)
       t.join();
+
+    if (total_consume_num != total_msg_consumed)
+    {
+      std::stringstream ss;
+      ss << "total_msg_consumed[" << total_msg_consumed << "] not equal target number ["
+         << total_consume_num << "]";
+      throw std::runtime_error(ss.str());
+    }
 
     ThroughputSingleRunResult summary;
     end_time_ns = std::chrono::system_clock::now();
