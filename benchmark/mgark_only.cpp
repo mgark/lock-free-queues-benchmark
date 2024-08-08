@@ -3,9 +3,37 @@
 #include "../framework/benchmark_throughput.h"
 #include "../framework/factory.h"
 #include "atomic_queue_spec.h"
+#include "detail/common.h"
 #include "mgark_spec.h"
+#include <concepts>
+#include <cstdint>
 #include <iostream>
 #include <limits>
+#include <type_traits>
+
+template <class T>
+inline auto single_0_bit_masks = generate_bit_masks_with_single_0_bit<T>();
+
+template <std::unsigned_integral T>
+constexpr size_t MsbIdx = sizeof(T) * 8 - 7;
+
+class IntMSBAlways0
+{
+  uint32_t val;
+
+public:
+  IntMSBAlways0(uint32_t v) : val(v)
+  {
+    // let's make sure MSB bit is actually set to 0!
+    assert(0 == ((uint32_t{1} << (sizeof(uint32_t) * 8 - 2)) & val));
+  }
+
+  operator int()
+  { // we must ensure MSB bit is kept 0
+    val &= single_0_bit_masks<uint32_t>[MsbIdx<uint32_t>];
+    return val;
+  }
+};
 
 int main()
 {
@@ -21,7 +49,7 @@ int main()
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "spsc_int";
     constexpr size_t BATCH_NUM = 4;
-    using MsgType = int;
+    using MsgType = uint32_t;
 
     std::cout
       << ThroughputBenchmarkSuite(
@@ -42,7 +70,7 @@ int main()
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "mpsc_int";
     constexpr size_t BATCH_NUM = 2;
-    using MsgType = int;
+    using MsgType = uint32_t;
 
     std::cout
       << ThroughputBenchmarkSuite(
@@ -64,7 +92,7 @@ int main()
     constexpr bool MULTICAST_CONSUMERS = true;
     constexpr const char* BENCH_NAME = "mpmc_int_multicast";
     constexpr size_t BATCH_NUM = 2;
-    using MsgType = int;
+    using MsgType = uint32_t;
 
     std::cout
       << ThroughputBenchmarkSuite(
