@@ -12,20 +12,23 @@ static std::function<std::unique_ptr<BenchmarkBase<SingleRunResult>>()> benchmar
 template <class T>
 struct ProduceIncremental
 {
-  T initial_val{};
-  T operator()() { return ++initial_val; }
+  volatile T initial_val{};
+  T operator()() volatile { return ++initial_val; }
 };
 
 template <class T>
 struct ProduceSameValue
 {
   T initial_val{};
-  T operator()() { return initial_val; }
+  T operator()() volatile { return initial_val; }
 };
 
 template <class T>
 struct ConsumeAndStore
 {
-  T last_val{};
-  void operator()(const T& v) { last_val = v; }
+  volatile T last_val{};
+  auto operator()(const T& v) volatile
+  {
+    return last_val = v; // it returns a value to force a volatile read! }
+  }
 };

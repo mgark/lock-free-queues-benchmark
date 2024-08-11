@@ -2,9 +2,12 @@
 
 #include "benchmark_base.h"
 #include "benchmark_suite.h"
+#include "factory.h"
 #include "utils.h"
 #include <atomic>
 #include <iostream>
+#include <stdexcept>
+#include <type_traits>
 
 struct ThroughputSingleRunResult
 {
@@ -158,6 +161,9 @@ public:
 
   ThroughputSingleRunResult go(size_t N) override
   {
+    using ProducerMsgCreator = typename ProduceAllMessage::message_creator;
+    using ConsumerMsgProcessor = typename ConsumeAllMessage::message_processor;
+
     std::atomic<std::chrono::system_clock::time_point> start_time_ns;
     std::atomic<std::chrono::system_clock::time_point> end_time_ns;
 
@@ -191,7 +197,7 @@ public:
             // all producers and consumers must indicate that they are ready!
           }
 
-          typename ProduceAllMessage::message_creator mc;
+          ProducerMsgCreator mc;
           start_time_ns.store(std::chrono::system_clock::now());
           size_t published_num = ProduceAllMessage()(per_producer_num, ctx_, mc);
           total_msg_published.fetch_add(published_num);
@@ -203,8 +209,34 @@ public:
       consumers_threads_.emplace_back(
         [&]()
         {
-          typename ConsumeAllMessage::message_processor mp;
-          total_msg_consumed.fetch_add(ConsumeAllMessage()(per_consumer_num, consumers_ready_num, ctx_, mp));
+          ConsumerMsgProcessor mp;
+          auto actual_consumed_num = ConsumeAllMessage()(per_consumer_num, consumers_ready_num, ctx_, mp);
+          total_msg_consumed.fetch_add(actual_consumed_num);
+          if (actual_consumed_num != per_consumer_num)
+          {
+            std::stringstream ss;
+            ss << "Consumer [" << consumer_id << "] should have consumed [" << per_consumer_num
+               << "], but instead consumed [" << actual_consumed_num
+               << "] which suggest a serious issue with queue's implementation";
+            throw std::runtime_error(ss.str());
+          }
+
+          /*if constexpr (std::is_same_v<ConsumerMsgProcessor, ConsumeAndStore<T>>)
+          {
+            if constexpr (std::is_same_v<ProducerMsgCreator, ProduceIncremental<T>>)
+            {
+              if (!multicast_consumers)
+              {
+                if (mp.last_val != per_producer_num)
+                {
+                  std::stringstream ss;
+                  ss << "Consumer [" << consumer_id << "] should got last value as ["
+                     << per_consumer_num << "], instead it got consumed [" << mp.last_val << "]";
+                  throw std::runtime_error(ss.str());
+                }
+              }
+            }
+          }*/
         });
     }
 

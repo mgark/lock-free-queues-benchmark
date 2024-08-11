@@ -30,8 +30,9 @@ int main()
     std::cout
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedContext<MsgType, CONSUMER_N, PRODUCER_N, BATCH_NUM>, PRODUCER_N, CONSUMER_N,
-                                                  MgarkSingleQueueProduceAll<ProduceSameValue<MsgType>>, MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+           {benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedContext<MsgType, CONSUMER_N, PRODUCER_N, BATCH_NUM>,
+                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>>,
+                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
