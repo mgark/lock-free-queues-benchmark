@@ -13,22 +13,22 @@ template <class T>
 struct ProduceIncremental
 {
   volatile T initial_val{};
-  T operator()() volatile { return ++initial_val; }
+  T operator()() { return ++initial_val; }
 };
 
 template <class T>
 struct ProduceSameValue
 {
   T initial_val{};
-  T operator()() volatile { return initial_val; }
+  T operator()() { return initial_val; }
 };
 
 template <class T>
 struct ConsumeAndStore
 {
   volatile T last_val{};
-  auto operator()(const T& v) volatile
+  void operator()(const T& v)
   {
-    return last_val = v; // it returns a value to force a volatile read! }
+    last_val = v; // it returns a value to force a volatile read! }
   }
 };
