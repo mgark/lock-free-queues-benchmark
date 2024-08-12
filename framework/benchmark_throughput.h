@@ -221,7 +221,7 @@ public:
             throw std::runtime_error(ss.str());
           }
 
-          if constexpr (std::is_same_v<ConsumerMsgProcessor, ConsumeAndStore<T>>)
+          /*if constexpr (std::is_same_v<ConsumerMsgProcessor, ConsumeAndStore<T>>)
           {
             if constexpr (std::is_same_v<ProducerMsgCreator, ProduceIncremental<T>>)
             {
@@ -233,7 +233,7 @@ public:
                 throw std::runtime_error(ss.str());
               }
             }
-          }
+          }*/
         });
     }
 

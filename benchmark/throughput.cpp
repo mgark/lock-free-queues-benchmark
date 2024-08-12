@@ -14,13 +14,13 @@ int main()
   std::cout << ThroughputBenchmarkStats::csv_header();
 
   // SPSC  tests
-  for (size_t RING_BUFFER_SIZE : {8, 64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
     constexpr size_t N = 1024 * 1024;
     constexpr size_t ITERATION_NUM = 100;
-    constexpr const char* BENCH_NAME = "spsc_int";
+    constexpr const char* BENCH_NAME = "spsc_uint32";
     using MgarkMsgType = integral_msb_always_0<uint32_t>;
     using MsgType = uint32_t;
 
@@ -37,30 +37,58 @@ int main()
            .go(N);
   }
 
-  // MPSC  tests
-  for (size_t RING_BUFFER_SIZE : {8, 64, 512, 1024, 1024 * 64, 1024 * 256})
+  // MPSC  multicast tests single consumer!
+  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 3;
     constexpr size_t N = 1024 * 256;
     constexpr size_t ITERATION_NUM = 100;
-    constexpr const char* BENCH_NAME = "mpsc_int";
-    using MsgType = int;
+    constexpr const char* BENCH_NAME = "mpsc_uint32";
+    // using MgarkMsgType = integral_msb_always_0<uint32_t>;
+    using MgarkMsgType = uint32_t;
+    using MsgType = uint32_t;
 
     std::cout
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_MPMCBoundedDynamicContext<MsgType, -1>, PRODUCER_N, CONSUMER_N,
+           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>, PRODUCER_N, CONSUMER_N,
                                                   AtomicQueueProduceAll<ProduceIncremental<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
-            benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N>, PRODUCER_N, CONSUMER_N,
-                                                  MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>>, MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+            benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>,
+                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MgarkMsgType>>,
+                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
+           .go(N);
+  }
+
+  // MPSC  anycast tests, multiple consumers!
+  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  {
+    constexpr size_t CONSUMER_N = 2;
+    constexpr size_t PRODUCER_N = 3;
+    constexpr size_t N = 1024 * 256;
+    constexpr size_t ITERATION_NUM = 100;
+    constexpr const char* BENCH_NAME = "mpmc_uint32";
+    // using MgarkMsgType = integral_msb_always_0<uint32_t>;
+    using MgarkMsgType = uint32_t;
+    using MsgType = uint32_t;
+
+    std::cout
+      << ThroughputBenchmarkSuite(
+           ITERATION_NUM,
+           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>, PRODUCER_N, CONSUMER_N,
+                                                  AtomicQueueProduceAll<ProduceIncremental<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+            benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>,
+                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MgarkMsgType>>,
+                                                  MgarkSingleQueueAnycastConsumeAll<ConsumeAndStore<MgarkMsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
 
   // MPMC - Multicast consumers  tests
-  for (size_t RING_BUFFER_SIZE : {8, 64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
   {
     constexpr size_t CONSUMER_N = 2;
     constexpr size_t PRODUCER_N = 2;
