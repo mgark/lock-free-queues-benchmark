@@ -1,5 +1,6 @@
 #pragma once
 
+#include "detail/single_bit_reuse.h"
 #include <atomic>
 #include <atomic_queue/atomic_queue.h>
 

@@ -4,6 +4,7 @@
 #include "../framework/factory.h"
 #include "atomic_queue_spec.h"
 #include "detail/common.h"
+#include "detail/single_bit_reuse.h"
 #include "mgark_spec.h"
 #include <concepts>
 #include <cstdint>
@@ -25,7 +26,7 @@ int main()
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "spsc_int_reused_bit";
     constexpr size_t BATCH_NUM = 4;
-    using MsgType = IntegralMSBAlways0<uint32_t>;
+    using MsgType = integral_msb_always_0<uint32_t>;
 
     std::cout
       << ThroughputBenchmarkSuite(

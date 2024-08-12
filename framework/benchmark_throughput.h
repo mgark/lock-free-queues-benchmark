@@ -221,22 +221,19 @@ public:
             throw std::runtime_error(ss.str());
           }
 
-          /*if constexpr (std::is_same_v<ConsumerMsgProcessor, ConsumeAndStore<T>>)
+          if constexpr (std::is_same_v<ConsumerMsgProcessor, ConsumeAndStore<T>>)
           {
             if constexpr (std::is_same_v<ProducerMsgCreator, ProduceIncremental<T>>)
             {
-              if (!multicast_consumers)
+              if (mp.last_val < per_producer_num)
               {
-                if (mp.last_val != per_producer_num)
-                {
-                  std::stringstream ss;
-                  ss << "Consumer [" << consumer_id << "] should got last value as ["
-                     << per_consumer_num << "], instead it got consumed [" << mp.last_val << "]";
-                  throw std::runtime_error(ss.str());
-                }
+                std::stringstream ss;
+                ss << "Consumer [" << consumer_id << "] should has last value at least as ["
+                   << per_producer_num << "], instead it got consumed [" << mp.last_val << "]";
+                throw std::runtime_error(ss.str());
               }
             }
-          }*/
+          }
         });
     }
 
