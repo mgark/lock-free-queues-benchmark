@@ -1,4 +1,5 @@
 #include "../framework/benchmark_base.h"
+#include "../framework/benchmark_round_trip_latency.h"
 #include "../framework/benchmark_suite.h"
 #include "../framework/benchmark_throughput.h"
 #include "../framework/factory.h"

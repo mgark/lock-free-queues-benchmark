@@ -6,6 +6,8 @@
 #include "utils.h"
 #include <atomic>
 #include <iostream>
+#include <limits>
+#include <mutex>
 #include <stdexcept>
 #include <type_traits>
 
@@ -164,17 +166,18 @@ public:
     using ProducerMsgCreator = typename ProduceAllMessage::message_creator;
     using ConsumerMsgProcessor = typename ConsumeAllMessage::message_processor;
 
-    std::atomic<std::chrono::system_clock::time_point> start_time_ns;
+    std::atomic<std::chrono::system_clock::time_point> start_time_ns{};
     std::atomic<std::chrono::system_clock::time_point> end_time_ns;
 
+    std::mutex guard;
     std::atomic_uint64_t producers_ready_num{0};
     std::atomic_uint64_t consumers_ready_num{0};
     std::atomic_uint64_t total_msg_published{0};
     std::atomic_uint64_t total_msg_consumed{0};
 
-    size_t per_producer_num{N / _PRODUCER_N_};
     size_t per_consumer_num;
     size_t total_consume_num;
+    size_t per_producer_num{N / _PRODUCER_N_};
     if constexpr (multicast_consumers)
     {
       per_consumer_num = per_producer_num * _PRODUCER_N_;
@@ -197,13 +200,19 @@ public:
             // all producers and consumers must indicate that they are ready!
           }
 
+          {
+            std::unique_lock autolock(guard);
+            if (start_time_ns.load() == std::chrono::system_clock::time_point{})
+              start_time_ns.store(std::chrono::system_clock::now());
+          }
+
           ProducerMsgCreator mc;
-          start_time_ns.store(std::chrono::system_clock::now());
           size_t published_num = ProduceAllMessage()(per_producer_num, ctx_, mc);
           total_msg_published.fetch_add(published_num);
         });
     }
 
+    size_t max_consumed_num_per_consumer{std::numeric_limits<size_t>::min()};
     for (size_t consumer_id = 0; consumer_id < _CONSUMER_N_; ++consumer_id)
     {
       consumers_threads_.emplace_back(
@@ -221,19 +230,8 @@ public:
             throw std::runtime_error(ss.str());
           }
 
-          /*if constexpr (std::is_same_v<ConsumerMsgProcessor, ConsumeAndStore<T>>)
-          {
-            if constexpr (std::is_same_v<ProducerMsgCreator, ProduceIncremental<T>>)
-            {
-              if (mp.last_val < per_producer_num)
-              {
-                std::stringstream ss;
-                ss << "Consumer [" << consumer_id << "] should has last value at least as ["
-                   << per_producer_num << "], instead it got consumed [" << mp.last_val << "]";
-                throw std::runtime_error(ss.str());
-              }
-            }
-          }*/
+          std::unique_lock autolock(guard);
+          max_consumed_num_per_consumer = std::max(max_consumed_num_per_consumer, actual_consumed_num);
         });
     }
 
@@ -242,6 +240,21 @@ public:
 
     for (auto& t : consumers_threads_)
       t.join();
+
+    if constexpr (std::is_same_v<ConsumerMsgProcessor, ConsumeAndStore<T>>)
+    {
+      if constexpr (std::is_same_v<ProducerMsgCreator, ProduceIncremental<T>>)
+      {
+        std::unique_lock autolock(guard);
+        if (max_consumed_num_per_consumer < per_producer_num)
+        {
+          std::stringstream ss;
+          ss << "Consumer should has last value at least as [" << per_producer_num
+             << "], instead it got consumed [" << max_consumed_num_per_consumer << "]";
+          throw std::runtime_error(ss.str());
+        }
+      }
+    }
 
     if (total_consume_num != total_msg_consumed)
     {
