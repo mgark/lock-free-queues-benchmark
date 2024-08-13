@@ -214,7 +214,7 @@ public:
 
           ProducerMsgCreator mc;
           ConsumerMsgProcessor mp;
-          size_t iterations_num = (*a)(idx, per_thread_num, a_ctx_, mc, mp);
+          size_t iterations_num = (*a)(idx, per_thread_num, a_ctx_, b_ctx_, mc, mp);
           a_total_iteration_num.fetch_add(iterations_num);
 
           std::unique_lock autolock(guard);
@@ -238,7 +238,7 @@ public:
 
           ProducerMsgCreator mc;
           ConsumerMsgProcessor mp;
-          size_t iterations_num = (*b)(per_thread_num, b_ctx_, mc, mp);
+          size_t iterations_num = (*b)(per_thread_num, a_ctx_, b_ctx_, mc, mp);
           b_total_iteration_num.fetch_add(iterations_num);
 
           std::unique_lock autolock(guard);

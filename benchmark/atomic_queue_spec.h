@@ -66,3 +66,64 @@ struct AtomicQueueConsumeAll
     return i;
   }
 };
+
+template <class ProduceOneMessage, class ProcessOneMessage>
+struct AQLatencyA
+{
+  using message_creator = ProduceOneMessage;
+  using message_processor = ProcessOneMessage;
+
+  template <class BenchmarkContext>
+  AQLatencyA(BenchmarkContext& a_ctx, BenchmarkContext& b_ctx)
+  {
+  }
+
+  template <class BenchmarkContext>
+  size_t operator()(size_t thread_idx, size_t N, BenchmarkContext& a_ctx, BenchmarkContext& b_ctx,
+                    ProduceOneMessage& mc, ProcessOneMessage& mp)
+  {
+    int i = 0;
+    while (i <= N)
+    {
+      // if there are multiple producers, we just allow the first
+      // one to publish the very first bootstrap message
+      if (i > 0 || thread_idx == 0)
+        a_ctx.q.push(mc());
+
+      if (i == N)
+        break;
+
+      mp(b_ctx.q.pop());
+      ++i;
+    }
+
+    return i;
+  }
+};
+
+template <class ProduceOneMessage, class ProcessOneMessage>
+struct AQLatencyB
+{
+  using message_creator = ProduceOneMessage;
+  using message_processor = ProcessOneMessage;
+
+  template <class BenchmarkContext>
+  AQLatencyB(BenchmarkContext& a_ctx, BenchmarkContext& b_ctx)
+  {
+  }
+
+  template <class BenchmarkContext>
+  size_t operator()(size_t N, BenchmarkContext& a_ctx, BenchmarkContext& b_ctx,
+                    ProduceOneMessage& mc, ProcessOneMessage& mp)
+  {
+    int i = 0;
+    while (i < N)
+    {
+      mp(a_ctx.q.pop());
+      b_ctx.q.push(mc());
+      ++i;
+    }
+
+    return i;
+  }
+};
