@@ -2,11 +2,12 @@
 #include "../framework/benchmark_round_trip_latency.h"
 #include "../framework/benchmark_suite.h"
 #include "../framework/factory.h"
-#include "atomic_queue_spec.h"
-#include "mgark_spec.h"
 #include <cstdint>
 #include <iostream>
 #include <limits>
+
+#include "vendor_specs/atomic_queue_spec.h"
+#include "vendor_specs/mgark_spec.h"
 
 int main()
 {

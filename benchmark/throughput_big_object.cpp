@@ -2,13 +2,13 @@
 #include "../framework/benchmark_suite.h"
 #include "../framework/benchmark_throughput.h"
 #include "../framework/factory.h"
-#include "atomic_queue_spec.h"
-#include "mgark_spec.h"
 #include <cstdint>
 #include <iostream>
 #include <limits>
 
-#include "order_book.h"
+#include "types/order_book.h"
+#include "vendor_specs/atomic_queue_spec.h"
+#include "vendor_specs/mgark_spec.h"
 
 int main()
 {
@@ -30,13 +30,13 @@ int main()
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
            {benchmark_creator<ThroughputBenchmark<MsgType, AQ_NonAtomic_SPSCBoundedDynamicContext<MsgType>, PRODUCER_N, CONSUMER_N,
-                                                  AtomicQueueProduceAll<ProduceOrderBook<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+                                                  AtomicQueueProduceAll<ProduceFreshOrderBook<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedContext<MsgType, CONSUMER_N, PRODUCER_N>, PRODUCER_N, CONSUMER_N,
-                                                  MgarkSingleQueueProduceAll<ProduceOrderBook<MsgType>>, MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+                                                  MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MsgType>>, MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_MulticastReliableBoundedContext<MgarkMsgType, CONSUMER_N, PRODUCER_N>,
-                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceOrderBook<MgarkMsgType>>,
+                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>>,
                                                   MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);

@@ -28,11 +28,11 @@ struct OrderBookOptimized : OrderBookBase<integral_msb_always_0<uint32_t>>
 };
 
 template <class T>
-struct ProduceOrderBook
+struct ProduceFreshOrderBook
 {
   T val;
 
-  ProduceOrderBook()
+  ProduceFreshOrderBook()
   {
     val.seq_num = 0;
     for (std::size_t i = 0; i < 20; ++i)

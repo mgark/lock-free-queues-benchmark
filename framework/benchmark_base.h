@@ -26,7 +26,7 @@ class BenchmarkBase
   size_t ring_buffer_sz_;
   std::string key_;
 
-  std::string make_key() const
+  std::string make_hidden_unique_key() const
   {
     return name_ + vendor_ + std::to_string(ring_buffer_sz_) + "-" + msg_type_name() +
       std::to_string(producer_num()) + "-" + std::to_string(consumer_num());
@@ -47,7 +47,7 @@ public:
   virtual size_t producer_num() const = 0;
   virtual size_t consumer_num() const = 0;
 
-  std::string key() const { return make_key(); }
+  std::string key() const { return make_hidden_unique_key(); }
   std::string name() const { return name_; }
   std::string vendor() const { return vendor_; }
   size_t ring_buffer_sz() const { return ring_buffer_sz_; }

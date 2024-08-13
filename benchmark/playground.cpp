@@ -3,10 +3,10 @@
 #include "../framework/benchmark_suite.h"
 #include "../framework/benchmark_throughput.h"
 #include "../framework/factory.h"
-#include "atomic_queue_spec.h"
 #include "detail/common.h"
 #include "detail/single_bit_reuse.h"
-#include "mgark_spec.h"
+#include "vendor_specs/atomic_queue_spec.h"
+#include "vendor_specs/mgark_spec.h"
 #include <concepts>
 #include <cstdint>
 #include <iostream>

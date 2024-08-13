@@ -2,9 +2,9 @@
 #include "../framework/benchmark_round_trip_latency.h"
 #include "../framework/benchmark_suite.h"
 #include "../framework/factory.h"
-#include "atomic_queue_spec.h"
-#include "mgark_spec.h"
-#include "order_book.h"
+#include "types/order_book.h"
+#include "vendor_specs/atomic_queue_spec.h"
+#include "vendor_specs/mgark_spec.h"
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -33,12 +33,12 @@ int main()
       << LatencyBenchmarkSuite(
            ITERATION_NUM,
            {benchmark_creator<LatencyBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
-                                               MgarkSingleQueueLatencyA<ProduceOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
-                                               MgarkSingleQueueLatencyB<ProduceOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
+                                               MgarkSingleQueueLatencyA<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
+                                               MgarkSingleQueueLatencyB<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
                               LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<LatencyBenchmark<MsgType, AQBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
-                                               AQLatencyA<ProduceOrderBook<MsgType>, ConsumeAndStore<MsgType>>,
-                                               AQLatencyB<ProduceOrderBook<MsgType>, ConsumeAndStore<MsgType>>>,
+                                               AQLatencyA<ProduceFreshOrderBook<MsgType>, ConsumeAndStore<MsgType>>,
+                                               AQLatencyB<ProduceFreshOrderBook<MsgType>, ConsumeAndStore<MsgType>>>,
                               LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
@@ -63,12 +63,12 @@ int main()
       << LatencyBenchmarkSuite(
            ITERATION_NUM,
            {benchmark_creator<LatencyBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
-                                               MgarkSingleQueueLatencyA<ProduceOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
-                                               MgarkSingleQueueLatencyB<ProduceOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
+                                               MgarkSingleQueueLatencyA<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
+                                               MgarkSingleQueueLatencyB<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
                               LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<LatencyBenchmark<MsgType, AQBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
-                                               AQLatencyA<ProduceOrderBook<MsgType>, ConsumeAndStore<MsgType>>,
-                                               AQLatencyB<ProduceOrderBook<MsgType>, ConsumeAndStore<MsgType>>>,
+                                               AQLatencyA<ProduceFreshOrderBook<MsgType>, ConsumeAndStore<MsgType>>,
+                                               AQLatencyB<ProduceFreshOrderBook<MsgType>, ConsumeAndStore<MsgType>>>,
                               LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
@@ -93,13 +93,14 @@ int main()
     std::cout
       << LatencyBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<LatencyBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
-                                               Mgark_Anycast_SingleQueueLatencyA<ProduceOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
-                                               Mgark_Anycast_SingleQueueLatencyB<ProduceOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
-                              LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+           {benchmark_creator<
+              LatencyBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
+                               Mgark_Anycast_SingleQueueLatencyA<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
+                               Mgark_Anycast_SingleQueueLatencyB<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
+              LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<LatencyBenchmark<MsgType, AQBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
-                                               AQLatencyA<ProduceOrderBook<MsgType>, ConsumeAndStore<MsgType>>,
-                                               AQLatencyB<ProduceOrderBook<MsgType>, ConsumeAndStore<MsgType>>>,
+                                               AQLatencyA<ProduceFreshOrderBook<MsgType>, ConsumeAndStore<MsgType>>,
+                                               AQLatencyB<ProduceFreshOrderBook<MsgType>, ConsumeAndStore<MsgType>>>,
                               LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
