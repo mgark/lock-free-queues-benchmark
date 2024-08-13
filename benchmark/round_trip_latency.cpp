@@ -19,7 +19,7 @@ int main()
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
     constexpr size_t THREAD_NUM = 1;
-    constexpr size_t N = 128;
+    constexpr size_t N = 1024 * 64;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "spsc_uint32";
 

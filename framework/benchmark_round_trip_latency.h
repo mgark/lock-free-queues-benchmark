@@ -194,12 +194,13 @@ public:
     size_t per_thread_num{N / _PRODUCER_N_};
     static_assert(!multicast_consumers);
 
+    std::vector<std::unique_ptr<LatencyA>> a_collection_;
     for (size_t thread_idx = 0; thread_idx < _THREAD_N_; ++thread_idx)
     {
       a_threads_.emplace_back(
         [&, idx = thread_idx]()
         {
-          LatencyA a(a_ctx_, b_ctx_); // it is important to run this before increment below!
+          auto a = std::make_unique<LatencyA>(a_ctx_, b_ctx_); // it is important to run this before increment below!
 
           ++a_ready_num;
           while (a_ready_num.load() < _THREAD_N_ || b_ready_num.load() < _THREAD_N_)
@@ -213,17 +214,21 @@ public:
 
           ProducerMsgCreator mc;
           ConsumerMsgProcessor mp;
-          size_t iterations_num = a(idx, per_thread_num, a_ctx_, mc, mp);
+          size_t iterations_num = (*a)(idx, per_thread_num, a_ctx_, mc, mp);
           a_total_iteration_num.fetch_add(iterations_num);
+
+          std::unique_lock autolock(guard);
+          a_collection_.emplace_back(std::move(a));
         });
     }
 
+    std::vector<std::unique_ptr<LatencyB>> b_collection_;
     for (size_t thread_idx = 0; thread_idx < _THREAD_N_; ++thread_idx)
     {
       b_threads_.emplace_back(
         [&]()
         {
-          LatencyB b(a_ctx_, b_ctx_); // it is important to run this before increment below!
+          auto b = std::make_unique<LatencyB>(a_ctx_, b_ctx_); // it is important to run this before increment below!
 
           ++b_ready_num;
           while (a_ready_num.load() < _THREAD_N_ || b_ready_num.load() < _THREAD_N_)
@@ -233,8 +238,11 @@ public:
 
           ProducerMsgCreator mc;
           ConsumerMsgProcessor mp;
-          size_t iterations_num = b(per_thread_num, b_ctx_, mc, mp);
+          size_t iterations_num = (*b)(per_thread_num, b_ctx_, mc, mp);
           b_total_iteration_num.fetch_add(iterations_num);
+
+          std::unique_lock autolock(guard);
+          b_collection_.emplace_back(std::move(b));
         });
     }
 
