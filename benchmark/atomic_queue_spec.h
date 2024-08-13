@@ -26,6 +26,28 @@ struct AQ_MPMCBoundedDynamicContext
   AQ_MPMCBoundedDynamicContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
 };
 
+template <class T>
+struct AQ_NonAtomic_SPSCBoundedDynamicContext
+{
+  static constexpr const char* VENDOR = "atomic_queue";
+
+  using QueueType = atomic_queue::AtomicQueueB2<T, std::allocator<T>, true, false, true>;
+  QueueType q;
+
+  AQ_NonAtomic_SPSCBoundedDynamicContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
+};
+
+template <class T>
+struct AQ_NonAtomic_MPMCBoundedDynamicContext
+{
+  static constexpr const char* VENDOR = "atomic_queue";
+
+  using QueueType = atomic_queue::AtomicQueueB2<T, std::allocator<T>>;
+  QueueType q;
+
+  AQ_NonAtomic_MPMCBoundedDynamicContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
+};
+
 template <class ProduceOneMessage>
 struct AtomicQueueProduceAll
 {
