@@ -1,3 +1,20 @@
+
+/*
+ * Copyright(c) 2024-present Mykola Garkusha.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "../framework/benchmark_base.h"
 #include "../framework/benchmark_round_trip_latency.h"
 #include "../framework/benchmark_suite.h"
@@ -90,6 +107,8 @@ int main()
 
     using MgarkBenchmarkContext =
       Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+    using Mgark2BenchmarkContext =
+      Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using AQBenchmarkContext = AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>;
 
     std::cout
@@ -99,6 +118,12 @@ int main()
                                                Mgark_Anycast_SingleQueueLatencyA<ProduceIncremental<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
                                                Mgark_Anycast_SingleQueueLatencyB<ProduceIncremental<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
                               LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+
+            benchmark_creator<LatencyBenchmark<MgarkMsgType, Mgark2BenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
+                                               MgarkSingleQueueLatencyA<ProduceIncremental<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, Mgark2BenchmarkContext>,
+                                               MgarkSingleQueueLatencyB<ProduceIncremental<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, Mgark2BenchmarkContext>>,
+                              LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+
             benchmark_creator<LatencyBenchmark<MsgType, AQBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
                                                AQLatencyA<ProduceIncremental<MsgType>, ConsumeAndStore<MsgType>>,
                                                AQLatencyB<ProduceIncremental<MsgType>, ConsumeAndStore<MsgType>>>,

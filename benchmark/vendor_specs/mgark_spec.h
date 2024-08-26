@@ -1,3 +1,20 @@
+
+/*
+ * Copyright(c) 2024-present Mykola Garkusha.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include "detail/common.h"
@@ -30,6 +47,18 @@ struct Mgark_AnycastReliableBoundedContext_SingleQueue
     : q(ring_buffer_sz), consumer_group({&q})
   {
   }
+};
+
+template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_, size_t _BATCH_NUM_ = 4>
+struct Mgark_Anycast2ReliableBoundedContext_SingleQueue
+{
+  static constexpr const char* VENDOR = "mgark_anycast_optimized";
+  static constexpr bool _MULTICAST_ = false;
+
+  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_, _BATCH_NUM_, _MULTICAST_>;
+  QueueType q;
+
+  Mgark_Anycast2ReliableBoundedContext_SingleQueue(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
 };
 
 template <class ProduceOneMessage>
