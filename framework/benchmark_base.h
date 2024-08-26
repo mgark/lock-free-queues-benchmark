@@ -12,7 +12,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "utils.h"
 #include <functional>
 #include <iomanip>
 #include <list>
