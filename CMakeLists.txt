@@ -8,6 +8,9 @@ set(CMAKE_CXX_STANDARD 20)
 find_package(Threads REQUIRED)
 find_package(Catch2 3 REQUIRED)
 
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fconcepts-diagnostics-depth=6")
+
 include(CTest)
 include(Catch)
 
