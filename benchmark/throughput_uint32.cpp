@@ -89,8 +89,8 @@ int main()
     constexpr size_t N = 1024 * 256;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "mpmc_uint32";
-    using MgarkMsgType = integral_msb_always_0<uint32_t>;
-    // using MgarkMsgType = uint32_t;
+    // using MgarkMsgType = integral_msb_always_0<uint32_t>;
+    using MgarkMsgType = uint32_t;
     using MsgType = uint32_t;
 
     std::cout

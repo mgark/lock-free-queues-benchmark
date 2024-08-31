@@ -103,7 +103,8 @@ int main()
     constexpr const char* BENCH_NAME = "mpmc_uint32";
 
     using MsgType = uint32_t;
-    using MgarkMsgType = integral_msb_always_0<uint32_t>;
+    // using MgarkMsgType = integral_msb_always_0<uint32_t>;
+    using MgarkMsgType = MsgType;
 
     using MgarkBenchmarkContext =
       Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
