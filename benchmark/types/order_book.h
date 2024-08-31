@@ -37,11 +37,6 @@ struct OrderBook : OrderBookBase<uint32_t>
 {
 };
 
-struct OrderBookOptimized : OrderBookBase<integral_msb_always_0<uint32_t>>
-{
-  auto read_version() { return seq_num.read_version(); }
-};
-
 template <class T>
 struct ProduceFreshOrderBook
 {

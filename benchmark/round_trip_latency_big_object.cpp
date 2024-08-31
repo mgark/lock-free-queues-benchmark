@@ -41,7 +41,7 @@ int main()
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "spsc_big_object";
 
-    using MgarkMsgType = OrderBookOptimized;
+    using MgarkMsgType = OrderBook;
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using MsgType = OrderBook;
     using AQBenchmarkContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>;
@@ -71,7 +71,7 @@ int main()
 
     constexpr const char* BENCH_NAME = "mpsc_big_object";
 
-    using MgarkMsgType = OrderBookOptimized;
+    using MgarkMsgType = OrderBook;
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using MsgType = OrderBook;
     using AQBenchmarkContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>;
@@ -99,9 +99,9 @@ int main()
     constexpr size_t N = 1024 * 32;
     constexpr size_t ITERATION_NUM = 100;
 
-    constexpr const char* BENCH_NAME = "mpmc_big_object";
+    constexpr const char* BENCH_NAME = "mpmc_orderbook";
 
-    using MgarkMsgType = OrderBookOptimized;
+    using MgarkMsgType = OrderBook;
     using MgarkBenchmarkContext =
       Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using MsgType = OrderBook;
