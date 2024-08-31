@@ -33,7 +33,7 @@ int main()
   std::cout << ThroughputBenchmarkStats::csv_header();
 
   // SPSC  tests
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  /*for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
@@ -46,18 +46,19 @@ int main()
     std::cout
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_NonAtomic_SPSCBoundedDynamicContext<MsgType>, PRODUCER_N, CONSUMER_N,
-                                                  AtomicQueueProduceAll<ProduceFreshOrderBook<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
-                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
-            benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedContext<MsgType, CONSUMER_N, PRODUCER_N>, PRODUCER_N, CONSUMER_N,
-                                                  MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MsgType>>, MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>,
-                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
-            benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_MulticastReliableBoundedContext<MgarkMsgType, CONSUMER_N, PRODUCER_N>,
-                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>>,
+           {benchmark_creator<ThroughputBenchmark<MsgType,
+  AQ_NonAtomic_SPSCBoundedDynamicContext<MsgType>, PRODUCER_N, CONSUMER_N, AtomicQueueProduceAll<ProduceFreshOrderBook<MsgType>>,
+  AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>, ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME,
+  RING_BUFFER_SIZE), benchmark_creator<ThroughputBenchmark<MsgType,
+  Mgark_MulticastReliableBoundedContext<MsgType, CONSUMER_N, PRODUCER_N>, PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MsgType>>,
+  MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>, ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME,
+  RING_BUFFER_SIZE), benchmark_creator<ThroughputBenchmark<MgarkMsgType,
+  Mgark_MulticastReliableBoundedContext<MgarkMsgType, CONSUMER_N, PRODUCER_N>, PRODUCER_N,
+  CONSUMER_N, MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>>,
                                                   MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>>>,
-                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
-           .go(N);
-  }
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME,
+  RING_BUFFER_SIZE)}) .go(N);
+  }*/
 
   // MPSC  multicast tests single consumer!
   /*for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
@@ -131,6 +132,78 @@ int main()
   MULTICAST_CONSUMERS>, ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME,
   RING_BUFFER_SIZE)}) .go(N);
   }*/
+
+  // SPSC  tests
+  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64})
+  {
+    constexpr size_t CONSUMER_N = 1;
+    constexpr size_t PRODUCER_N = 1;
+    constexpr size_t N = 1024 * 512;
+    constexpr size_t ITERATION_NUM = 100;
+    constexpr const char* BENCH_NAME = "spsc_orderbook";
+    using MgarkMsgType = OrderBookOptimized;
+    using MsgType = OrderBook;
+
+    std::cout
+      << ThroughputBenchmarkSuite(
+           ITERATION_NUM,
+           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_NonAtomic_SPSCBoundedDynamicContext<MsgType>, PRODUCER_N, CONSUMER_N,
+                                                  AtomicQueueProduceAll<ProduceFreshOrderBook<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+            benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>,
+                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>>,
+                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
+           .go(N);
+  }
+
+  // MPSC  multicast tests single consumer!
+  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64})
+  {
+    constexpr size_t CONSUMER_N = 1;
+    constexpr size_t PRODUCER_N = 3;
+    constexpr size_t N = 1024 * 512;
+    constexpr size_t ITERATION_NUM = 100;
+    constexpr const char* BENCH_NAME = "mpsc_orderbook";
+    using MgarkMsgType = OrderBookOptimized;
+    using MsgType = OrderBook;
+
+    std::cout
+      << ThroughputBenchmarkSuite(
+           ITERATION_NUM,
+           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>, PRODUCER_N, CONSUMER_N,
+                                                  AtomicQueueProduceAll<ProduceFreshOrderBook<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+            benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>,
+                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>>,
+                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
+           .go(N);
+  }
+
+  // MPMC  anycast tests, multiple consumers!
+  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64})
+  {
+    constexpr size_t CONSUMER_N = 2;
+    constexpr size_t PRODUCER_N = 2;
+    constexpr size_t N = 1024 * 512;
+    constexpr size_t ITERATION_NUM = 100;
+    constexpr const char* BENCH_NAME = "mpmc_orderbook";
+    using MgarkMsgType = OrderBookOptimized;
+    using MsgType = OrderBook;
+
+    std::cout
+      << ThroughputBenchmarkSuite(
+           ITERATION_NUM,
+           {benchmark_creator<ThroughputBenchmark<MsgType, AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>, PRODUCER_N, CONSUMER_N,
+                                                  AtomicQueueProduceAll<ProduceFreshOrderBook<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+            benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>,
+                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>>,
+                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
+           .go(N);
+  }
 
   return 0;
 }

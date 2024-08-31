@@ -49,7 +49,7 @@ int main()
            {benchmark_creator<ThroughputBenchmark<MsgType, AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<uint32_t>::max()>, PRODUCER_N, CONSUMER_N,
                                                   AtomicQueueProduceAll<ProduceIncremental<MsgType>>, AtomicQueueConsumeAll<ConsumeAndStore<MsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
-            benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_MulticastReliableBoundedContext<MgarkMsgType, CONSUMER_N, PRODUCER_N>,
+            benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>,
                                                   PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MgarkMsgType>>,
                                                   MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})

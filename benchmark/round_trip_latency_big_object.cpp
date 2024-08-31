@@ -103,18 +103,17 @@ int main()
 
     using MgarkMsgType = OrderBookOptimized;
     using MgarkBenchmarkContext =
-      Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+      Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using MsgType = OrderBook;
     using AQBenchmarkContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>;
 
     std::cout
       << LatencyBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<
-              LatencyBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
-                               Mgark_Anycast_SingleQueueLatencyA<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
-                               Mgark_Anycast_SingleQueueLatencyB<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
-              LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+           {benchmark_creator<LatencyBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
+                                               MgarkSingleQueueLatencyA<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
+                                               MgarkSingleQueueLatencyB<ProduceFreshOrderBook<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
+                              LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<LatencyBenchmark<MsgType, AQBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
                                                AQLatencyA<ProduceFreshOrderBook<MsgType>, ConsumeAndStore<MsgType>>,
                                                AQLatencyB<ProduceFreshOrderBook<MsgType>, ConsumeAndStore<MsgType>>>,
