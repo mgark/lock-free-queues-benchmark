@@ -42,16 +42,15 @@ int main()
     constexpr size_t PRODUCER_N = 1;
     constexpr size_t N = 1024 * 1024;
     constexpr size_t ITERATION_NUM = 100;
-    constexpr const char* BENCH_NAME = "spsc_int_reused_bit";
+    constexpr const char* BENCH_NAME = "spsc_int";
     constexpr size_t BATCH_NUM = 4;
-    using MsgType = integral_msb_always_0<uint32_t>;
+    using MsgType = uint32_t;
 
     std::cout
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedContext<MsgType, CONSUMER_N, PRODUCER_N, BATCH_NUM>,
-                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>>,
-                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+           {benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N>, PRODUCER_N, CONSUMER_N,
+                                                  MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>>, MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
