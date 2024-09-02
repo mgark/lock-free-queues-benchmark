@@ -210,8 +210,16 @@ public:
       producers_threads_.emplace_back(
         [&]()
         {
+          while (consumers_ready_num.load() < _CONSUMER_N_)
+          {
+            // all producers and consumers must indicate that they are ready!
+          }
+
+          ProducerMsgCreator mc;
+          ProduceAllMessage msg_producer(per_producer_num, ctx_, mc);
           ++producers_ready_num;
-          while (producers_ready_num.load() < _PRODUCER_N_ || consumers_ready_num.load() < _CONSUMER_N_)
+
+          while (producers_ready_num.load() < _PRODUCER_N_)
           {
             // all producers and consumers must indicate that they are ready!
           }
@@ -222,8 +230,7 @@ public:
               start_time_ns.store(std::chrono::system_clock::now());
           }
 
-          ProducerMsgCreator mc;
-          size_t published_num = ProduceAllMessage()(per_producer_num, ctx_, mc);
+          size_t published_num = msg_producer();
           total_msg_published.fetch_add(published_num);
         });
     }
@@ -235,7 +242,15 @@ public:
         [&]()
         {
           ConsumerMsgProcessor mp;
-          auto actual_consumed_num = ConsumeAllMessage()(per_consumer_num, consumers_ready_num, ctx_, mp);
+          ConsumeAllMessage msg_consumer(per_consumer_num, ctx_, mp);
+          ++consumers_ready_num;
+
+          while (producers_ready_num.load() < _PRODUCER_N_ || consumers_ready_num.load() < _CONSUMER_N_)
+          {
+            // all producers and consumers must indicate that they are ready!
+          }
+
+          auto actual_consumed_num = msg_consumer();
           total_msg_consumed.fetch_add(actual_consumed_num);
           if (actual_consumed_num != per_consumer_num)
           {

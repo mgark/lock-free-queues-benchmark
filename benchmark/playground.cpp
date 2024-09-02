@@ -40,17 +40,18 @@ int main()
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
-    constexpr size_t N = 1024 * 1024;
-    constexpr size_t ITERATION_NUM = 100;
+    constexpr size_t N = 1024 * 512;
+    constexpr size_t ITERATION_NUM = 120;
     constexpr const char* BENCH_NAME = "spsc_int";
     constexpr size_t BATCH_NUM = 4;
     using MsgType = uint32_t;
+    using BenchmarkContext = Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N>;
 
     std::cout
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<ThroughputBenchmark<MsgType, Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N>, PRODUCER_N, CONSUMER_N,
-                                                  MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>>, MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>>,
+           {benchmark_creator<ThroughputBenchmark<MsgType, BenchmarkContext, PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>, BenchmarkContext>,
+                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>, BenchmarkContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }

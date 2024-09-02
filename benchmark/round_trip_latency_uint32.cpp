@@ -43,9 +43,9 @@ int main()
 
     // using MgarkMsgType = integral_msb_always_0<uint32_t>;
     using MgarkMsgType = uint32_t;
+    using MsgType = uint32_t;
     //    integral_msb_always_0<uint32_t>;
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using MsgType = uint32_t;
     using AQBenchmarkContext = AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>;
 
     std::cout

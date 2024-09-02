@@ -65,18 +65,23 @@ struct AQ_NonAtomic_MPMCBoundedDynamicContext
   AQ_NonAtomic_MPMCBoundedDynamicContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
 };
 
-template <class ProduceOneMessage>
+template <class ProduceOneMessage, class BenchmarkContext>
 struct AtomicQueueProduceAll
 {
+  size_t N_;
+  BenchmarkContext& ctx_;
+  ProduceOneMessage& message_creator_;
   using message_creator = ProduceOneMessage;
-
-  template <class BenchmarkContext>
-  size_t operator()(size_t N, BenchmarkContext& ctx, ProduceOneMessage& message_creator)
+  AtomicQueueProduceAll(size_t N, BenchmarkContext& ctx, ProduceOneMessage& message_creator)
+    : N_(N), ctx_(ctx), message_creator_(message_creator)
+  {
+  }
+  size_t operator()()
   {
     size_t i = 0;
-    while (i < N)
+    while (i < N_)
     {
-      ctx.q.push(message_creator());
+      ctx_.q.push(message_creator_());
       ++i;
     }
 
@@ -84,21 +89,25 @@ struct AtomicQueueProduceAll
   }
 };
 
-template <class ProcessOneMessage>
+template <class ProcessOneMessage, class BenchmarkContext>
 struct AtomicQueueConsumeAll
 {
+  size_t N_;
+  BenchmarkContext& ctx_;
+  ProcessOneMessage& p_;
   using message_processor = ProcessOneMessage;
 
-  template <class BenchmarkContext>
-  size_t operator()(size_t N, std::atomic_uint64_t& consumers_ready_num, BenchmarkContext& ctx,
-                    ProcessOneMessage& p)
+  AtomicQueueConsumeAll(size_t N, BenchmarkContext& ctx, ProcessOneMessage& p)
+    : N_(N), ctx_(ctx), p_(p)
   {
-    ++consumers_ready_num;
+  }
 
+  size_t operator()()
+  {
     size_t i = 0;
-    while (i < N)
+    while (i < N_)
     {
-      p(ctx.q.pop());
+      p_(ctx_.q.pop());
       ++i;
     }
 

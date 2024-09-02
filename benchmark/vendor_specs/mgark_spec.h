@@ -61,22 +61,28 @@ struct Mgark_Anycast2ReliableBoundedContext_SingleQueue
   Mgark_Anycast2ReliableBoundedContext_SingleQueue(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
 };
 
-template <class ProduceOneMessage>
+template <class ProduceOneMessage, class BenchmarkContext>
 struct MgarkSingleQueueProduceAll
 {
+  size_t N_;
+  BenchmarkContext& ctx_;
+  ProduceOneMessage& message_creator_;
+  ProducerBlocking<typename BenchmarkContext::QueueType> p_;
+
   using message_creator = ProduceOneMessage;
-
-  template <class BenchmarkContext>
-  size_t operator()(size_t N, BenchmarkContext& ctx, ProduceOneMessage& message_creator)
+  MgarkSingleQueueProduceAll(size_t N, BenchmarkContext& ctx, ProduceOneMessage& message_creator)
+    : N_(N), ctx_(ctx), message_creator_(message_creator), p_(ctx.q)
   {
-    ProducerBlocking<typename BenchmarkContext::QueueType> p(ctx.q);
     ctx.q.start();
+  }
 
+  size_t operator()()
+  {
     size_t i = 0;
     ProduceReturnCode ret_code;
-    while (i < N)
+    while (i < N_)
     {
-      ret_code = p.emplace(message_creator());
+      ret_code = p_.emplace(message_creator_());
       if (ProduceReturnCode::Published == ret_code)
         ++i;
     }
@@ -85,50 +91,69 @@ struct MgarkSingleQueueProduceAll
   }
 };
 
-template <class ProcessOneMessage>
+template <class ProcessOneMessage, class BenchmarkContext>
 struct MgarkSingleQueueConsumeAll
 {
+  size_t N_;
+  BenchmarkContext& ctx_;
+  ProcessOneMessage& p_;
+  ConsumerBlocking<typename BenchmarkContext::QueueType> c_;
+
   using message_processor = ProcessOneMessage;
-
-  template <class BenchmarkContext>
-  size_t operator()(size_t N, std::atomic_uint64_t& consumers_ready_num, BenchmarkContext& ctx,
-                    ProcessOneMessage& p)
+  MgarkSingleQueueConsumeAll(size_t N, BenchmarkContext& ctx, ProcessOneMessage& p)
+    : N_(N), ctx_(ctx), p_(p), c_(ctx_.q)
   {
-    ConsumerBlocking<typename BenchmarkContext::QueueType> c(ctx.q);
-    // important to do this after creating a consumer since it needs first to join the queue before
-    ++consumers_ready_num;
+  }
 
+  size_t operator()()
+  {
+    // important to do this after creating a consumer since it needs first to join the queue before
     size_t i = 0;
     bool stop = false;
-    while (i < N)
+    while (i < N_)
     {
-      auto ret_code = c.consume([&](const auto& m) mutable { p(m); });
-      if (ret_code == ConsumeReturnCode::Consumed)
-        ++i;
+      // auto ret_code = c_.consume([&](const auto& m) mutable { p_(m); });
+      const auto* v = c_.peek();
+      if (v)
+      {
+        p_(*v);
+        c_.skip();
+      }
+
+      // p_(c_.consume());
+      //  if (ret_code == ConsumeReturnCode::Consumed)
+      ++i;
     }
 
     return i;
   }
 };
 
-template <class ProcessOneMessage>
+template <class ProcessOneMessage, class BenchmarkContext>
 struct MgarkSingleQueueAnycastConsumeAll
 {
+
+  size_t N_;
+  BenchmarkContext& ctx_;
+  ProcessOneMessage& p_;
+  AnycastConsumerBlocking<typename BenchmarkContext::QueueType> c_;
+
   using message_processor = ProcessOneMessage;
 
-  template <class BenchmarkContext>
-  size_t operator()(size_t N, std::atomic_uint64_t& consumers_ready_num, BenchmarkContext& ctx,
-                    ProcessOneMessage& p)
+  MgarkSingleQueueAnycastConsumeAll(size_t N, BenchmarkContext& ctx, ProcessOneMessage& p)
+    : N_(N), ctx_(ctx), p_(p), c_(ctx_.consumer_group)
   {
-    AnycastConsumerBlocking<typename BenchmarkContext::QueueType> c(ctx.consumer_group);
+  }
+
+  size_t operator()()
+  {
     // important to do this after creating a consumer since it needs first to join the queue before
-    ++consumers_ready_num;
 
     size_t i = 0;
     bool stop = false;
-    while (i < N)
+    while (i < N_)
     {
-      auto ret_code = c.consume([&](const auto& m) mutable { p(m); });
+      auto ret_code = c_.consume([&](const auto& m) mutable { p_(m); });
       if (ret_code == ConsumeReturnCode::Consumed)
         ++i;
     }
@@ -176,11 +201,18 @@ struct MgarkSingleQueueLatencyA
       if (i == N)
         break;
 
+      const typename BenchmarkContext::QueueType::type* val;
       do
       {
-        c_ret_code = consumer.consume([&](const auto& m) mutable { mp(m); });
-      } while (c_ret_code != ConsumeReturnCode::Consumed);
-
+        val = consumer.peek();
+        if (val)
+        {
+          mp(*val);
+          consumer.skip();
+        }
+        // c_ret_code = consumer.consume([&](const auto& m) mutable { mp(m); });
+      } while (val == nullptr);
+      //} while (c_ret_code != ConsumeReturnCode::Consumed);
       ++i;
     }
 
@@ -214,10 +246,18 @@ struct MgarkSingleQueueLatencyB
 
     while (i < N)
     {
+      const typename BenchmarkContext::QueueType::type* val;
       do
       {
-        c_ret_code = consumer.consume([&](const auto& m) mutable { mp(m); });
-      } while (c_ret_code != ConsumeReturnCode::Consumed);
+        val = consumer.peek();
+        if (val)
+        {
+          mp(*val);
+          consumer.skip();
+        }
+        // c_ret_code = consumer.consume([&](const auto& m) mutable { mp(m); });
+        //} while (c_ret_code != ConsumeReturnCode::Consumed);
+      } while (val == nullptr);
 
       do
       {
