@@ -30,6 +30,7 @@
 int main()
 {
 
+  constexpr bool _MAXIMIZE_THROUGHOUT_ = true;
   std::cout << ThroughputBenchmarkStats::csv_header();
 
   // SPSC  tests
@@ -44,7 +45,8 @@ int main()
     using MsgType = uint32_t;
 
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using AtomicQueueContext = AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>;
+    using AtomicQueueContext =
+      AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << ThroughputBenchmarkSuite(
@@ -71,7 +73,8 @@ int main()
     // using MgarkMsgType = uint32_t;
     using MsgType = uint32_t;
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using AtomicQueueContext = AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>;
+    using AtomicQueueContext =
+      AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << ThroughputBenchmarkSuite(
@@ -102,7 +105,8 @@ int main()
       Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using MgarkBenchmarkContext1 =
       Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using AtomicQueueContext = AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>;
+    using AtomicQueueContext =
+      AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << ThroughputBenchmarkSuite(

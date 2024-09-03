@@ -29,10 +29,11 @@
 int main()
 {
 
+  constexpr bool _MAXIMIZE_THROUGHOUT_ = false;
   std::cout << LatencyBenchmarkStats::csv_header();
 
   // SPSC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {64})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
@@ -44,7 +45,7 @@ int main()
     using MgarkMsgType = OrderBook;
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using MsgType = OrderBook;
-    using AQBenchmarkContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>;
+    using AQBenchmarkContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType, _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << LatencyBenchmarkSuite(
@@ -61,7 +62,7 @@ int main()
   }
 
   // MPSC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {64})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 2;
@@ -74,7 +75,7 @@ int main()
     using MgarkMsgType = OrderBook;
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using MsgType = OrderBook;
-    using AQBenchmarkContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>;
+    using AQBenchmarkContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType, _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << LatencyBenchmarkSuite(
@@ -91,7 +92,7 @@ int main()
   }
 
   // MPMC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {64})
   {
     constexpr size_t CONSUMER_N = 2;
     constexpr size_t PRODUCER_N = 2;
@@ -105,7 +106,7 @@ int main()
     using MgarkBenchmarkContext =
       Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using MsgType = OrderBook;
-    using AQBenchmarkContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>;
+    using AQBenchmarkContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType, _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << LatencyBenchmarkSuite(

@@ -30,6 +30,7 @@
 int main()
 {
 
+  constexpr bool _MAXIMIZE_THROUGHOUT_ = true;
   std::cout << ThroughputBenchmarkStats::csv_header();
 
   // SPSC  tests
@@ -37,14 +38,14 @@ int main()
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
-    constexpr size_t N = 1024 * 512;
+    constexpr size_t N = 1024 * 256;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "spsc_orderbook";
     using MgarkMsgType = OrderBook;
     using MsgType = OrderBook;
 
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using AtomicQueueContext = AQ_NonAtomic_SPSCBoundedDynamicContext<MsgType>;
+    using AtomicQueueContext = AQ_NonAtomic_SPSCBoundedDynamicContext<MsgType, _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << ThroughputBenchmarkSuite(
@@ -60,18 +61,18 @@ int main()
   }
 
   // MPSC  multicast tests single consumer!
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64})
+  for (size_t RING_BUFFER_SIZE : {512, 1024, 1024 * 64})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 3;
-    constexpr size_t N = 1024 * 512;
+    constexpr size_t N = 1024 * 256;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "mpsc_orderbook";
     using MgarkMsgType = OrderBook;
     using MsgType = OrderBook;
 
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using AtomicQueueContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>;
+    using AtomicQueueContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType, _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << ThroughputBenchmarkSuite(
@@ -87,11 +88,11 @@ int main()
   }
 
   // MPMC  anycast tests, multiple consumers!
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64})
+  for (size_t RING_BUFFER_SIZE : {512, 1024, 1024 * 64})
   {
     constexpr size_t CONSUMER_N = 2;
     constexpr size_t PRODUCER_N = 2;
-    constexpr size_t N = 1024 * 512;
+    constexpr size_t N = 1024 * 256;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "mpmc_orderbook";
     using MgarkMsgType = OrderBook;
@@ -99,7 +100,7 @@ int main()
 
     using MgarkBenchmarkContext =
       Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using AtomicQueueContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType>;
+    using AtomicQueueContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType, _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << ThroughputBenchmarkSuite(

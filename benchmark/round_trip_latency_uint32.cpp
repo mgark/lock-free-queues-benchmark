@@ -29,10 +29,11 @@
 int main()
 {
 
+  constexpr bool _MAXIMIZE_THROUGHOUT_ = false;
   std::cout << LatencyBenchmarkStats::csv_header();
 
   // SPSC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {64})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
@@ -46,7 +47,8 @@ int main()
     using MsgType = uint32_t;
     //    integral_msb_always_0<uint32_t>;
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using AQBenchmarkContext = AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>;
+    using AQBenchmarkContext =
+      AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << LatencyBenchmarkSuite(
@@ -63,7 +65,7 @@ int main()
   }
 
   // MPSC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {64})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 2;
@@ -77,7 +79,8 @@ int main()
     using MgarkMsgType = uint32_t; // integral_msb_always_0<uint32_t>;
 
     using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using AQBenchmarkContext = AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>;
+    using AQBenchmarkContext =
+      AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << LatencyBenchmarkSuite(
@@ -94,7 +97,7 @@ int main()
   }
 
   // MPMC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {64})
   {
     constexpr size_t CONSUMER_N = 2;
     constexpr size_t PRODUCER_N = 2;
@@ -112,7 +115,8 @@ int main()
       Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
     using Mgark2BenchmarkContext =
       Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
-    using AQBenchmarkContext = AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max()>;
+    using AQBenchmarkContext =
+      AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
       << LatencyBenchmarkSuite(

@@ -21,45 +21,46 @@
 #include <atomic>
 #include <atomic_queue/atomic_queue.h>
 
-template <class T, T NIL_VAL>
+template <class T, T NIL_VAL, bool _MAXIMIZE_THROUGHPUT_>
 struct AQ_SPSCBoundedDynamicContext
 {
   static constexpr const char* VENDOR = "atomic_queue";
 
-  using QueueType = atomic_queue::AtomicQueueB<T, std::allocator<T>, NIL_VAL, true, false, true>;
+  using QueueType =
+    atomic_queue::AtomicQueueB<T, std::allocator<T>, NIL_VAL, _MAXIMIZE_THROUGHPUT_, false, true>;
   QueueType q;
 
   AQ_SPSCBoundedDynamicContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
 };
 
-template <class T, T NIL_VAL>
+template <class T, T NIL_VAL, bool _MAXIMIZE_THROUGHPUT_>
 struct AQ_MPMCBoundedDynamicContext
 {
   static constexpr const char* VENDOR = "atomic_queue";
 
-  using QueueType = atomic_queue::AtomicQueueB<T, std::allocator<T>, NIL_VAL>;
+  using QueueType = atomic_queue::AtomicQueueB<T, std::allocator<T>, NIL_VAL, _MAXIMIZE_THROUGHPUT_>;
   QueueType q;
 
   AQ_MPMCBoundedDynamicContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
 };
 
-template <class T>
+template <class T, bool _MAXIMIZE_THROUGHPUT_>
 struct AQ_NonAtomic_SPSCBoundedDynamicContext
 {
   static constexpr const char* VENDOR = "atomic_queue";
 
-  using QueueType = atomic_queue::AtomicQueueB2<T, std::allocator<T>, true, false, true>;
+  using QueueType = atomic_queue::AtomicQueueB2<T, std::allocator<T>, _MAXIMIZE_THROUGHPUT_, false, true>;
   QueueType q;
 
   AQ_NonAtomic_SPSCBoundedDynamicContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
 };
 
-template <class T>
+template <class T, bool _MAXIMIZE_THROUGHPUT_>
 struct AQ_NonAtomic_MPMCBoundedDynamicContext
 {
   static constexpr const char* VENDOR = "atomic_queue";
 
-  using QueueType = atomic_queue::AtomicQueueB2<T, std::allocator<T>>;
+  using QueueType = atomic_queue::AtomicQueueB2<T, std::allocator<T>, _MAXIMIZE_THROUGHPUT_>;
   QueueType q;
 
   AQ_NonAtomic_MPMCBoundedDynamicContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}

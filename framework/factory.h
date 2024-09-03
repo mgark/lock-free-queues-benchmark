@@ -17,6 +17,7 @@
 #pragma once
 
 #include "benchmark_base.h"
+#include <cstdint>
 
 template <class ConcreteBenchmark, class SingleRunResult, class... T>
 static std::function<std::unique_ptr<BenchmarkBase<SingleRunResult>>()> benchmark_creator(
@@ -28,23 +29,24 @@ static std::function<std::unique_ptr<BenchmarkBase<SingleRunResult>>()> benchmar
 template <class T>
 struct ProduceIncremental
 {
-  T initial_val{};
-  T operator()() { return ++initial_val; }
+  volatile T initial_val{};
+  T operator()()
+  {
+    initial_val = 1 + initial_val;
+    return initial_val;
+  }
 };
 
 template <class T>
 struct ProduceSameValue
 {
-  T initial_val{};
+  volatile T initial_val{};
   T operator()() { return initial_val; }
 };
 
 template <class T>
 struct ConsumeAndStore
 {
-  T last_val{};
-  void operator()(const T& v)
-  {
-    last_val = v; // it returns a value to force a volatile read! }
-  }
+  volatile T last_val{};
+  void operator()(const T& v) { last_val = v; }
 };

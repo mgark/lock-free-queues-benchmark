@@ -19,14 +19,16 @@
 
 #include "detail/single_bit_reuse.h"
 #include <array>
+#include <cstdint>
 #include <sys/types.h>
 
 template <class SeqNumType>
 struct OrderBookBase
 {
+  using seq_num_type = SeqNumType;
   static constexpr std::size_t N = 20;
 
-  SeqNumType seq_num;
+  volatile SeqNumType seq_num;
   std::array<uint32_t, N> bid_price;
   std::array<uint32_t, N> ask_price;
   std::array<uint32_t, N> bid_size;
@@ -56,13 +58,25 @@ struct ProduceFreshOrderBook
 
   T operator()()
   {
-    uint32_t new_seq_num = ++val.seq_num;
-
+    uint32_t new_seq_num = val.seq_num + 1;
     val.bid_size[3] = new_seq_num;
     val.bid_size[17] = new_seq_num;
     val.ask_size[0] = new_seq_num;
     val.ask_size[19] = new_seq_num;
-
     return val;
+  }
+};
+
+template <>
+struct ConsumeAndStore<OrderBook>
+{
+  // volatile OrderBook::seq_num_type* ptr;
+  volatile OrderBook::seq_num_type seq_num;
+  OrderBook last_val{};
+  void operator()(const OrderBook& v)
+  {
+    last_val = v;
+    seq_num = last_val.seq_num;
+    // ptr = reinterpret_cast<volatile OrderBook::seq_num_type*>(last_val.seq_num);
   }
 };
