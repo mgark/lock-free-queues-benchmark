@@ -112,7 +112,6 @@ struct MgarkSingleQueueConsumeAll
     bool stop = false;
     while (i < N_)
     {
-      // auto ret_code = c_.consume([&](const auto& m) mutable { p_(m); });
       const auto* v = c_.peek();
       if (v)
       {
@@ -120,8 +119,6 @@ struct MgarkSingleQueueConsumeAll
         c_.skip();
       }
 
-      // p_(c_.consume());
-      //  if (ret_code == ConsumeReturnCode::Consumed)
       ++i;
     }
 
@@ -181,6 +178,7 @@ struct MgarkSingleQueueLatencyA
   {
     // important to do this after creating a consumer since it needs first to join the queue before
     a_ctx.q.start();
+    b_ctx.q.start();
 
     int i = 0;
     ProduceReturnCode p_ret_code;
@@ -192,27 +190,19 @@ struct MgarkSingleQueueLatencyA
       // one to publish the very first bootstrap message
       if (i > 0 || thread_idx == 0)
       {
-        do
-        {
-          p_ret_code = producer.emplace(mc());
-        } while (p_ret_code != ProduceReturnCode::Published);
+        p_ret_code = producer.emplace(mc());
       }
 
       if (i == N)
         break;
 
-      const typename BenchmarkContext::QueueType::type* val;
-      do
+      const typename BenchmarkContext::QueueType::type* val = consumer.peek();
+      if (val)
       {
-        val = consumer.peek();
-        if (val)
-        {
-          mp(*val);
-          consumer.skip();
-        }
-        // c_ret_code = consumer.consume([&](const auto& m) mutable { mp(m); });
-      } while (val == nullptr);
-      //} while (c_ret_code != ConsumeReturnCode::Consumed);
+        mp(*val);
+        consumer.skip();
+      }
+
       ++i;
     }
 
@@ -238,6 +228,7 @@ struct MgarkSingleQueueLatencyB
                     ProduceOneMessage& mc, ProcessOneMessage& mp)
   {
     // important to do this after creating a consumer since it needs first to join the queue before
+    a_ctx.q.start();
     b_ctx.q.start();
 
     int i = 0;
@@ -246,24 +237,14 @@ struct MgarkSingleQueueLatencyB
 
     while (i < N)
     {
-      const typename BenchmarkContext::QueueType::type* val;
-      do
+      const typename BenchmarkContext::QueueType::type* val = consumer.peek();
+      if (val)
       {
-        val = consumer.peek();
-        if (val)
-        {
-          mp(*val);
-          consumer.skip();
-        }
-        // c_ret_code = consumer.consume([&](const auto& m) mutable { mp(m); });
-        //} while (c_ret_code != ConsumeReturnCode::Consumed);
-      } while (val == nullptr);
+        mp(*val);
+        consumer.skip();
+      }
 
-      do
-      {
-        p_ret_code = producer.emplace(mc());
-      } while (p_ret_code != ProduceReturnCode::Published);
-
+      producer.emplace(mc());
       ++i;
     }
 
