@@ -44,7 +44,8 @@ int main()
     using MgarkMsgType = OrderBook;
     using MsgType = OrderBook;
 
-    using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+    using MgarkBenchmarkContext =
+      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4, 1>;
     using AtomicQueueContext = AQ_NonAtomic_SPSCBoundedDynamicContext<MsgType, _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
@@ -71,7 +72,8 @@ int main()
     using MgarkMsgType = OrderBook;
     using MsgType = OrderBook;
 
-    using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+    using MgarkBenchmarkContext =
+      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4, 10>;
     using AtomicQueueContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType, _MAXIMIZE_THROUGHOUT_>;
 
     std::cout
@@ -80,8 +82,8 @@ int main()
            {benchmark_creator<ThroughputBenchmark<MsgType, AtomicQueueContext, PRODUCER_N, CONSUMER_N, AtomicQueueProduceAll<ProduceFreshOrderBook<MsgType>, AtomicQueueContext>,
                                                   AtomicQueueConsumeAll<ConsumeAndStore<MsgType>, AtomicQueueContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
-            benchmark_creator<ThroughputBenchmark<MgarkMsgType, Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>,
-                                                  PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>, MgarkBenchmarkContext>,
+            benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N,
+                                                  MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>, MgarkBenchmarkContext>,
                                                   MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
@@ -99,7 +101,7 @@ int main()
     using MsgType = OrderBook;
 
     using MgarkBenchmarkContext =
-      Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+      Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4, 10>;
     using AtomicQueueContext = AQ_NonAtomic_MPMCBoundedDynamicContext<MsgType, _MAXIMIZE_THROUGHOUT_>;
 
     std::cout

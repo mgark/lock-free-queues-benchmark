@@ -44,7 +44,8 @@ int main()
     using MgarkMsgType = uint32_t;
     using MsgType = uint32_t;
 
-    using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+    using MgarkBenchmarkContext =
+      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4>;
     using AtomicQueueContext =
       AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
@@ -62,17 +63,19 @@ int main()
   }
 
   // MPSC  multicast tests single consumer!
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {512, 1024, 1024 * 64})
   {
     constexpr size_t CONSUMER_N = 1;
-    constexpr size_t PRODUCER_N = 3;
+    constexpr size_t PRODUCER_N = 2;
     constexpr size_t N = 1024 * 256;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "mpsc_uint32";
+    constexpr bool _CPU_PAUSE_N_ = 10;
     using MgarkMsgType = uint32_t;
     // using MgarkMsgType = uint32_t;
     using MsgType = uint32_t;
-    using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+    using MgarkBenchmarkContext =
+      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4, _CPU_PAUSE_N_>;
     using AtomicQueueContext =
       AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
@@ -90,21 +93,22 @@ int main()
   }
 
   // MPMC  anycast tests, multiple consumers!
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {512, 1024, 1024 * 64})
   {
     constexpr size_t CONSUMER_N = 2;
-    constexpr size_t PRODUCER_N = 3;
+    constexpr size_t PRODUCER_N = 2;
     constexpr size_t N = 1024 * 256;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "mpmc_uint32";
+    constexpr bool _CPU_PAUSE_N_ = 10;
     // using MgarkMsgType = integral_msb_always_0<uint32_t>;
     using MgarkMsgType = uint32_t;
     using MsgType = uint32_t;
 
     using MgarkBenchmarkContext2 =
-      Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+      Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4, _CPU_PAUSE_N_>;
     using MgarkBenchmarkContext1 =
-      Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+      Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4, _CPU_PAUSE_N_>;
     using AtomicQueueContext =
       AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
@@ -117,11 +121,11 @@ int main()
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext2, PRODUCER_N, CONSUMER_N,
                                                   MgarkSingleQueueProduceAll<ProduceIncremental<MgarkMsgType>, MgarkBenchmarkContext2>,
                                                   MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext2>>,
-                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)/*,
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext1, PRODUCER_N, CONSUMER_N,
                                                   MgarkSingleQueueProduceAll<ProduceIncremental<MgarkMsgType>, MgarkBenchmarkContext1>,
                                                   MgarkSingleQueueAnycastConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext1>>,
-                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)*/})
            .go(N);
   }
 

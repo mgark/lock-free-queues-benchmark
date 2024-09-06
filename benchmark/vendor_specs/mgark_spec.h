@@ -23,23 +23,23 @@
 #include <chrono>
 #include <mpmc.h>
 
-template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_, size_t _BATCH_NUM_ = 4>
+template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_, size_t _BATCH_NUM_ = 4, size_t _CPU_PAUSE_N_ = 0>
 struct Mgark_MulticastReliableBoundedContext
 {
   static constexpr const char* VENDOR = "mgark";
 
-  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_, _BATCH_NUM_>;
+  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_, _BATCH_NUM_, _CPU_PAUSE_N_>;
   QueueType q;
 
   Mgark_MulticastReliableBoundedContext(size_t ring_buffer_sz) : q(ring_buffer_sz) {}
 };
 
-template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_, size_t _BATCH_NUM_ = 4>
+template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_, size_t _BATCH_NUM_ = 4, size_t _CPU_PAUSE_N_ = 0>
 struct Mgark_AnycastReliableBoundedContext_SingleQueue
 {
   static constexpr const char* VENDOR = "mgark";
 
-  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_, _BATCH_NUM_>;
+  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_, _BATCH_NUM_, _CPU_PAUSE_N_>;
   QueueType q;
   AnycastConsumerGroup<QueueType> consumer_group;
 
@@ -49,13 +49,14 @@ struct Mgark_AnycastReliableBoundedContext_SingleQueue
   }
 };
 
-template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_, size_t _BATCH_NUM_ = 4>
+template <class T, size_t _PRODUCER_N_, size_t _CONSUMER_N_, size_t _BATCH_NUM_ = 4, size_t _CPU_PAUSE_N_ = 0>
 struct Mgark_Anycast2ReliableBoundedContext_SingleQueue
 {
   static constexpr const char* VENDOR = "mgark_anycast_optimized";
   static constexpr bool _MULTICAST_ = false;
 
-  using QueueType = SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_, _BATCH_NUM_, _MULTICAST_>;
+  using QueueType =
+    SPMCMulticastQueueReliableBounded<T, _CONSUMER_N_, _PRODUCER_N_, _BATCH_NUM_, _CPU_PAUSE_N_, _MULTICAST_>;
   QueueType q;
 
   Mgark_Anycast2ReliableBoundedContext_SingleQueue(size_t ring_buffer_sz) : q(ring_buffer_sz) {}

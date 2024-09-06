@@ -33,7 +33,7 @@ int main()
   std::cout << LatencyBenchmarkStats::csv_header();
 
   // SPSC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {64})
+  for (size_t RING_BUFFER_SIZE : {512})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
@@ -46,7 +46,8 @@ int main()
     using MgarkMsgType = uint32_t;
     using MsgType = uint32_t;
     //    integral_msb_always_0<uint32_t>;
-    using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+    using MgarkBenchmarkContext =
+      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4>;
     using AQBenchmarkContext =
       AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
@@ -65,7 +66,7 @@ int main()
   }
 
   // MPSC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {64})
+  for (size_t RING_BUFFER_SIZE : {512})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 2;
@@ -78,7 +79,8 @@ int main()
     using MsgType = uint32_t;
     using MgarkMsgType = uint32_t; // integral_msb_always_0<uint32_t>;
 
-    using MgarkBenchmarkContext = Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N>;
+    using MgarkBenchmarkContext =
+      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4>;
     using AQBenchmarkContext =
       AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
@@ -97,7 +99,7 @@ int main()
   }
 
   // MPMC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {64})
+  for (size_t RING_BUFFER_SIZE : {512})
   {
     constexpr size_t CONSUMER_N = 2;
     constexpr size_t PRODUCER_N = 2;
