@@ -34,38 +34,41 @@ int main()
 {
 
   std::cout << ThroughputBenchmarkStats::csv_header();
+  constexpr size_t BATCH_NUM = 32;
 
   // SPSC Optmized  tests
-  /*for (size_t RING_BUFFER_SIZE : {8, 64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {2048, 1024 * 64})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
     constexpr size_t N = 1024 * 512;
     constexpr size_t ITERATION_NUM = 120;
     constexpr const char* BENCH_NAME = "spsc_int";
-    constexpr size_t BATCH_NUM = 4;
+    constexpr size_t CPU_PAUSE_N = 0;
     using MsgType = uint32_t;
-    using BenchmarkContext = Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N>;
+    using BenchmarkContext =
+      Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N, BATCH_NUM, CPU_PAUSE_N>;
 
     std::cout
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<ThroughputBenchmark<MsgType, BenchmarkContext, PRODUCER_N, CONSUMER_N,
-  MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>, BenchmarkContext>,
-  MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>, BenchmarkContext>>,
-  ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)}) .go(N);
-  }*/
+           {benchmark_creator<ThroughputBenchmark<MsgType, BenchmarkContext, PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>, BenchmarkContext>,
+                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>, BenchmarkContext>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
+           .go(N);
+  }
 
-  for (size_t RING_BUFFER_SIZE : {8, 64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {2048, 1024 * 64})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 2;
     constexpr size_t N = 1024 * 512;
     constexpr size_t ITERATION_NUM = 120;
-    constexpr const char* BENCH_NAME = "mpsc_int";
-    constexpr size_t BATCH_NUM = 4;
+    constexpr const char* BENCH_NAME = "mpsc_uint32";
+    constexpr size_t CPU_PAUSE_N = 20;
     using MsgType = uint32_t;
-    using BenchmarkContext = Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N>;
+    using BenchmarkContext =
+      Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N, BATCH_NUM, CPU_PAUSE_N>;
 
     std::cout
       << ThroughputBenchmarkSuite(

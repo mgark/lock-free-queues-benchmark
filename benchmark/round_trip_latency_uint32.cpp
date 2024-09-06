@@ -33,7 +33,7 @@ int main()
   std::cout << LatencyBenchmarkStats::csv_header();
 
   // SPSC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {512})
+  for (size_t RING_BUFFER_SIZE : {1024})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
@@ -66,7 +66,7 @@ int main()
   }
 
   // MPSC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {512})
+  for (size_t RING_BUFFER_SIZE : {1024})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 2;
@@ -99,7 +99,7 @@ int main()
   }
 
   // MPMC round-trip latency  tests
-  for (size_t RING_BUFFER_SIZE : {512})
+  for (size_t RING_BUFFER_SIZE : {1024})
   {
     constexpr size_t CONSUMER_N = 2;
     constexpr size_t PRODUCER_N = 2;

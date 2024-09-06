@@ -31,21 +31,23 @@ int main()
 {
 
   constexpr bool _MAXIMIZE_THROUGHOUT_ = true;
+  constexpr size_t BATCH_NUM = 32;
   std::cout << ThroughputBenchmarkStats::csv_header();
 
   // SPSC  tests
-  for (size_t RING_BUFFER_SIZE : {64, 512, 1024, 1024 * 64, 1024 * 256})
+  for (size_t RING_BUFFER_SIZE : {1024, 1024 * 64, 1024 * 256})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 1;
     constexpr size_t N = 1024 * 1024;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "spsc_uint32";
+    constexpr bool CPU_PAUSE_N = 0;
     using MgarkMsgType = uint32_t;
     using MsgType = uint32_t;
 
     using MgarkBenchmarkContext =
-      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4>;
+      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, BATCH_NUM, CPU_PAUSE_N>;
     using AtomicQueueContext =
       AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
@@ -63,19 +65,19 @@ int main()
   }
 
   // MPSC  multicast tests single consumer!
-  for (size_t RING_BUFFER_SIZE : {512, 1024, 1024 * 64})
+  for (size_t RING_BUFFER_SIZE : {1024, 1024 * 64})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 2;
     constexpr size_t N = 1024 * 256;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "mpsc_uint32";
-    constexpr bool _CPU_PAUSE_N_ = 10;
+    constexpr bool _CPU_PAUSE_N_ = 30;
     using MgarkMsgType = uint32_t;
     // using MgarkMsgType = uint32_t;
     using MsgType = uint32_t;
     using MgarkBenchmarkContext =
-      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4, _CPU_PAUSE_N_>;
+      Mgark_MulticastReliableBoundedContext<MgarkMsgType, PRODUCER_N, CONSUMER_N, BATCH_NUM, _CPU_PAUSE_N_>;
     using AtomicQueueContext =
       AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
@@ -93,22 +95,22 @@ int main()
   }
 
   // MPMC  anycast tests, multiple consumers!
-  for (size_t RING_BUFFER_SIZE : {512, 1024, 1024 * 64})
+  for (size_t RING_BUFFER_SIZE : {1024, 1024 * 64})
   {
     constexpr size_t CONSUMER_N = 2;
     constexpr size_t PRODUCER_N = 2;
     constexpr size_t N = 1024 * 256;
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "mpmc_uint32";
-    constexpr bool _CPU_PAUSE_N_ = 10;
+    constexpr bool _CPU_PAUSE_N_ = 30;
     // using MgarkMsgType = integral_msb_always_0<uint32_t>;
     using MgarkMsgType = uint32_t;
     using MsgType = uint32_t;
 
     using MgarkBenchmarkContext2 =
-      Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4, _CPU_PAUSE_N_>;
+      Mgark_Anycast2ReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N, BATCH_NUM, _CPU_PAUSE_N_>;
     using MgarkBenchmarkContext1 =
-      Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N, 4, _CPU_PAUSE_N_>;
+      Mgark_AnycastReliableBoundedContext_SingleQueue<MgarkMsgType, PRODUCER_N, CONSUMER_N, BATCH_NUM, _CPU_PAUSE_N_>;
     using AtomicQueueContext =
       AQ_MPMCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), _MAXIMIZE_THROUGHOUT_>;
 
