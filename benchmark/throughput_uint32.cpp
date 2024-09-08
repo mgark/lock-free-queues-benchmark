@@ -20,6 +20,7 @@
 #include "../framework/benchmark_throughput.h"
 #include "../framework/factory.h"
 
+#include "detail/single_bit_reuse.h"
 #include "vendor_specs/atomic_queue_spec.h"
 #include "vendor_specs/mgark_spec.h"
 
@@ -43,7 +44,7 @@ int main()
     constexpr size_t ITERATION_NUM = 100;
     constexpr const char* BENCH_NAME = "spsc_uint32";
     constexpr bool CPU_PAUSE_N = 0;
-    using MgarkMsgType = uint32_t;
+    using MgarkMsgType = uint32_t; // integral_msb_always_0<uint32_t>;
     using MsgType = uint32_t;
 
     using MgarkBenchmarkContext =

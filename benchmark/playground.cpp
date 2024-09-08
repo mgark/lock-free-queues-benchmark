@@ -24,6 +24,8 @@
 #include "detail/single_bit_reuse.h"
 #include "vendor_specs/atomic_queue_spec.h"
 #include "vendor_specs/mgark_spec.h"
+#include "vendor_specs/spsc1_spec.h"
+#include "vendor_specs/spsc2_spec.h"
 #include <concepts>
 #include <cstdint>
 #include <iostream>
@@ -34,7 +36,7 @@ int main()
 {
 
   std::cout << ThroughputBenchmarkStats::csv_header();
-  constexpr size_t BATCH_NUM = 32;
+  constexpr size_t BATCH_NUM = 4;
 
   // SPSC Optmized  tests
   for (size_t RING_BUFFER_SIZE : {2048, 1024 * 64})
@@ -45,20 +47,36 @@ int main()
     constexpr size_t ITERATION_NUM = 120;
     constexpr const char* BENCH_NAME = "spsc_int";
     constexpr size_t CPU_PAUSE_N = 0;
-    using MsgType = uint32_t;
+    using MsgType0 = uint32_t;
+    using MsgType = MsgType0;
+    // using MsgType = integral_msb_always_0<uint32_t>;
     using BenchmarkContext =
       Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N, BATCH_NUM, CPU_PAUSE_N>;
+
+    using AtomicQueueContext =
+      AQ_SPSCBoundedDynamicContext<MsgType, std::numeric_limits<MsgType>::max(), true>;
+    using Spsc1Context = Spsc1BenchmarkContext<uint32_t>;
+    using Spsc2Context = Spsc2BenchmarkContext<uint32_t, BATCH_NUM>;
 
     std::cout
       << ThroughputBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<ThroughputBenchmark<MsgType, BenchmarkContext, PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>, BenchmarkContext>,
+           {benchmark_creator<ThroughputBenchmark<MsgType, AtomicQueueContext, PRODUCER_N, CONSUMER_N, AtomicQueueProduceAll<ProduceIncremental<MsgType>, AtomicQueueContext>,
+                                                  AtomicQueueConsumeAll<ConsumeAndStore<MsgType>, AtomicQueueContext>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+            benchmark_creator<ThroughputBenchmark<MsgType, BenchmarkContext, PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>, BenchmarkContext>,
                                                   MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>, BenchmarkContext>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+            benchmark_creator<ThroughputBenchmark<MsgType0, Spsc1Context, PRODUCER_N, CONSUMER_N, Spsc1SingleQueueProduceAll<ProduceIncremental<MsgType0>, Spsc1Context>,
+                                                  Spsc1QueueConsumeAll<ConsumeAndStore<MsgType0>, Spsc1Context>>,
+                              ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+            benchmark_creator<ThroughputBenchmark<MsgType0, Spsc2Context, PRODUCER_N, CONSUMER_N, Spsc2SingleQueueProduceAll<ProduceIncremental<MsgType0>, Spsc2Context>,
+                                                  Spsc2QueueConsumeAll<ConsumeAndStore<MsgType0>, Spsc2Context>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
 
-  for (size_t RING_BUFFER_SIZE : {2048, 1024 * 64})
+  /*  for (size_t RING_BUFFER_SIZE : {2048, 1024 * 64})
   {
     constexpr size_t CONSUMER_N = 1;
     constexpr size_t PRODUCER_N = 2;
@@ -77,7 +95,7 @@ int main()
                                                   MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>, BenchmarkContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
-  }
+  }*/
 
   return 0;
 }
