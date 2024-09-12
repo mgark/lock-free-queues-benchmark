@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include "detail/single_bit_reuse.h"
 #include <array>
 #include <cstdint>
 #include <sys/types.h>

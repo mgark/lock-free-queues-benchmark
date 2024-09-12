@@ -221,7 +221,7 @@ public:
           ++a_ready_num;
           while (a_ready_num.load() < _THREAD_N_ || b_ready_num.load() < _THREAD_N_)
           {
-            // all A and B threads must indicate that they are ready!
+            // all A and B threads must indicate that they are ready !
           }
 
           std::chrono::system_clock::time_point expected_time{};

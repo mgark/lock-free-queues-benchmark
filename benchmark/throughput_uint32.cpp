@@ -20,7 +20,6 @@
 #include "../framework/benchmark_throughput.h"
 #include "../framework/factory.h"
 
-#include "detail/single_bit_reuse.h"
 #include "vendor_specs/atomic_queue_spec.h"
 #include "vendor_specs/mgark_spec.h"
 
@@ -60,7 +59,7 @@ int main()
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N,
                                                   MgarkSingleQueueProduceAll<ProduceIncremental<MgarkMsgType>, MgarkBenchmarkContext>,
-                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
+                                                  MgarkSingleQueueNonBlockingConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
@@ -90,7 +89,7 @@ int main()
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N,
                                                   MgarkSingleQueueProduceAll<ProduceIncremental<MgarkMsgType>, MgarkBenchmarkContext>,
-                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
+                                                  MgarkSingleQueueNonBlockingConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
@@ -123,7 +122,7 @@ int main()
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext2, PRODUCER_N, CONSUMER_N,
                                                   MgarkSingleQueueProduceAll<ProduceIncremental<MgarkMsgType>, MgarkBenchmarkContext2>,
-                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext2>>,
+                                                  MgarkSingleQueueNonBlockingConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext2>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)/*,
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext1, PRODUCER_N, CONSUMER_N,
                                                   MgarkSingleQueueProduceAll<ProduceIncremental<MgarkMsgType>, MgarkBenchmarkContext1>,
@@ -149,7 +148,7 @@ int main()
            {benchmark_creator<ThroughputBenchmark<MsgType,
   Mgark_MulticastReliableBoundedContext<MsgType, PRODUCER_N, CONSUMER_N>, PRODUCER_N, CONSUMER_N,
   MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>>,
-  MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>>, MULTICAST_CONSUMERS>,
+  MgarkSingleQueueNonBlockingConsumeAll<ConsumeAndStore<MsgType>>, MULTICAST_CONSUMERS>,
   ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)}) .go(N);
   }*/
 

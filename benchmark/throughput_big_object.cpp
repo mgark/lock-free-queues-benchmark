@@ -56,7 +56,7 @@ int main()
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N,
                                                   MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>, MgarkBenchmarkContext>,
-                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
+                                                  MgarkSingleQueueNonBlockingConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
@@ -84,7 +84,7 @@ int main()
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N,
                                                   MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>, MgarkBenchmarkContext>,
-                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
+                                                  MgarkSingleQueueNonBlockingConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }
@@ -112,7 +112,7 @@ int main()
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N,
                                                   MgarkSingleQueueProduceAll<ProduceFreshOrderBook<MgarkMsgType>, MgarkBenchmarkContext>,
-                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
+                                                  MgarkSingleQueueNonBlockingConsumeAll<ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE)})
            .go(N);
   }

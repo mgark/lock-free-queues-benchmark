@@ -110,7 +110,6 @@ int main()
     constexpr const char* BENCH_NAME = "mpmc_uint32";
 
     using MsgType = uint32_t;
-    // using MgarkMsgType = integral_msb_always_0<uint32_t>;
     using MgarkMsgType = MsgType;
 
     using MgarkBenchmarkContext =
@@ -123,10 +122,11 @@ int main()
     std::cout
       << LatencyBenchmarkSuite(
            ITERATION_NUM,
-           {benchmark_creator<LatencyBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
-                                               Mgark_Anycast_SingleQueueLatencyA<ProduceIncremental<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>,
-                                               Mgark_Anycast_SingleQueueLatencyB<ProduceIncremental<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>,
-                              LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
+           {/*benchmark_creator<LatencyBenchmark<MgarkMsgType, MgarkBenchmarkContext, PRODUCER_N,
+               CONSUMER_N, THREAD_NUM, Mgark_Anycast_SingleQueueLatencyA<ProduceIncremental<MgarkMsgType>,
+               ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>, Mgark_Anycast_SingleQueueLatencyB<ProduceIncremental<MgarkMsgType>,
+               ConsumeAndStore<MgarkMsgType>, MgarkBenchmarkContext>>, LatencyBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME,
+               RING_BUFFER_SIZE),*/
 
             benchmark_creator<LatencyBenchmark<MgarkMsgType, Mgark2BenchmarkContext, PRODUCER_N, CONSUMER_N, THREAD_NUM,
                                                MgarkSingleQueueLatencyA<ProduceIncremental<MgarkMsgType>, ConsumeAndStore<MgarkMsgType>, Mgark2BenchmarkContext>,

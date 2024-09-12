@@ -21,7 +21,6 @@
 #include "../framework/benchmark_throughput.h"
 #include "../framework/factory.h"
 #include "detail/common.h"
-#include "detail/single_bit_reuse.h"
 #include "vendor_specs/atomic_queue_spec.h"
 #include "vendor_specs/mgark_spec.h"
 #include "vendor_specs/spsc1_spec.h"
@@ -65,7 +64,7 @@ int main()
                                                   AtomicQueueConsumeAll<ConsumeAndStore<MsgType>, AtomicQueueContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MsgType, BenchmarkContext, PRODUCER_N, CONSUMER_N, MgarkSingleQueueProduceAll<ProduceIncremental<MsgType>, BenchmarkContext>,
-                                                  MgarkSingleQueueConsumeAll<ConsumeAndStore<MsgType>, BenchmarkContext>>,
+                                                  MgarkSingleQueueNonBlockingConsumeAll<ConsumeAndStore<MsgType>, BenchmarkContext>>,
                               ThroughputBenchmarkSuite::BenchmarkRunResult>(BENCH_NAME, RING_BUFFER_SIZE),
             benchmark_creator<ThroughputBenchmark<MsgType0, Spsc1Context, PRODUCER_N, CONSUMER_N, Spsc1SingleQueueProduceAll<ProduceIncremental<MsgType0>, Spsc1Context>,
                                                   Spsc1QueueConsumeAll<ConsumeAndStore<MsgType0>, Spsc1Context>>,
